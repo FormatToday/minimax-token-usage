@@ -6,6 +6,8 @@
 
 > Token Plan 是 MiniMax 推出的订阅制套餐，前身是 Coding Plan。该工具使用 MiniMax 官方 API `/v1/token_plan/remains` 每分钟查询一次使用量。
 
+[下载地址](https://github.com/FormatToday/minimax-token-usage/releases/latest)
+
 ## 功能
 
 - 📊 三个维度展示：

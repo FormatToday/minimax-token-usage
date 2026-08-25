@@ -3,6 +3,12 @@ const path = require('path');
 const fs = require('fs');
 
 const isDev = !app.isPackaged;
+
+if (!isDev) {
+  const exeDir = path.dirname(app.getPath('exe'));
+  app.setPath('userData', path.join(exeDir, 'userData'));
+}
+
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
 let mainWindow = null;
@@ -45,7 +51,7 @@ function createWindow() {
     frame: false,
     transparent: true,
     resizable: true,
-    skipTaskbar: false,
+    skipTaskbar: true,
     title: 'MiniMax Token Usage',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
