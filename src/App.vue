@@ -71,7 +71,7 @@
         <div class="head">
           <div>
             <div class="label">视频赠送</div>
-            <div class="sub" v-if="video">{{ videoResetText }}</div>
+            <div class="sub" v-if="video">{{ resetLabel(video.remainsTime) }}</div>
             <div class="sub" v-else>暂无数据</div>
           </div>
           <div class="right">
@@ -175,15 +175,6 @@ export default {
       const m = Math.floor(diff / 60);
       const s = diff % 60;
       return `上次更新: ${m}分${s}秒前`;
-    });
-
-    const videoResetText = computed(() => {
-      const v = video.value;
-      if (!v) return '暂无数据';
-      const t = v.remainsTime;
-      if (!Number.isFinite(t) || t <= 0) return '即将重置';
-      if (t < 86400) return '本周内刷新';
-      return `${formatRemainTime(t)}后重置`;
     });
 
     function totalDisplay(q) {
@@ -291,7 +282,6 @@ export default {
       interval5h, weekly, video,
       loading, loaded, error, lastUpdated,
       settingsOpen, footerText, statusDotClass, statusTitle,
-      videoResetText,
       now,
       refresh, openSettings, onSaved, minimize,
       resetLabel, totalDisplay, usedDisplay, fillClass,

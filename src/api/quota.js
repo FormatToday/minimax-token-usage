@@ -62,8 +62,12 @@ function pickWeeklyUsed(m) {
   return 0;
 }
 
+function msToSeconds(ms) {
+  return Math.floor((ms || 0) / 1000);
+}
+
 function maxRemainsTime(list, key) {
-  return list.reduce((mx, x) => Math.max(mx, x[key] || 0), 0);
+  return list.reduce((mx, x) => Math.max(mx, msToSeconds(x[key])), 0);
 }
 
 function findVideoBonus(modelRemains) {
@@ -115,7 +119,7 @@ export function aggregateUsage(modelRemains) {
       used,
       total,
       percent: total > 0 ? Math.max(0, Math.min(100, Math.round((used / total) * 100))) : 0,
-      remainsTime: videoLike.weekly_remains_time || 0,
+      remainsTime: msToSeconds(videoLike.remains_time),
       status: videoLike.current_weekly_status,
     };
   }
