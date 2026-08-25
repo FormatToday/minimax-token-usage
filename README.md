@@ -91,12 +91,20 @@ npm run clean:builder-cache
 
 ### 5. 自动发布到 GitHub Releases
 
-项目自带 `.github/workflows/release.yml`：推送 `v*` 形式的 tag 时自动在 Windows + macOS 上并行构建，并通过 `electron-builder` 把产物上传到 Release。
+项目自带 `.github/workflows/release.yml`，支持两种触发方式：
+
+**① Tag 推送 → 自动构建并发布 Release**
 
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+Windows + macOS 并行构建，`electron-builder` 把 `.exe` / `.dmg` 上传到同名 Release。
+
+**② Actions 页面手动触发 → 只构建，不发布**
+
+在 GitHub 仓库页 → Actions → Release → Run workflow。产物会作为 workflow artifact 上传，从 `Artifacts` 区域下载，不污染 Release 列表。常用于本地不方便构建时验证打包链路。
 
 - macOS 没配置 Apple Developer ID，构建出的 DMG 是未签名/未公证的，安装时需要在「系统设置 → 隐私与安全性」点「仍要打开」绕过 Gatekeeper
 - Windows 没配置代码签名证书，SmartScreen 会提示「未知发布者」
