@@ -34,13 +34,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 24
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -76,9 +76,9 @@ jobs:
       # ────────── Windows 产物 ──────────
       - name: Upload win installer (.exe)
         if: matrix.target == 'win' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: win-installer.zip
+          name: win-installer-${{ matrix.target }}
           if-no-files-found: ignore
           path: |
             dist/*Setup*.exe
@@ -87,18 +87,18 @@ jobs:
 
       - name: Upload win portable (免安装绿色版)
         if: matrix.target == 'win' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: win-portable.zip
+          name: win-portable-${{ matrix.target }}
           if-no-files-found: ignore
           path: dist/win-unpacked
 
       # ────────── macOS 产物 ──────────
       - name: Upload mac installer (.dmg)
         if: matrix.target == 'mac' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: mac-installer.zip
+          name: mac-installer-${{ matrix.target }}
           if-no-files-found: ignore
           path: |
             dist/*.dmg
@@ -107,9 +107,9 @@ jobs:
 
       - name: Upload mac portable (.app)
         if: matrix.target == 'mac' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: mac-portable.zip
+          name: mac-portable-${{ matrix.target }}
           if-no-files-found: ignore
           path: |
             dist/mac
