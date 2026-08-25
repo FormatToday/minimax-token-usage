@@ -1,3 +1,9 @@
+:root {
+  --bg-color: #ffffff;
+  --bg-color-elevated: color-mix(in srgb, var(--bg-color), #000 4%);
+  --border-color: color-mix(in srgb, var(--bg-color), #000 10%);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -10,7 +16,7 @@ html, body, #app {
     'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   font-size: 13px;
   color: #1f2328;
-  background: #ffffff;
+  background: var(--bg-color);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -30,8 +36,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: #fafbfc;
-  border-bottom: 1px solid #eef0f3;
+  background: var(--bg-color-elevated);
+  border-bottom: 1px solid var(--border-color);
   font-size: 12px;
   color: #4e5969;
   height: 36px;
@@ -81,7 +87,7 @@ body {
 }
 
 .icon-btn:hover {
-  background: #eef0f3;
+  background: color-mix(in srgb, var(--bg-color), #000 6%);
   color: #1f2328;
 }
 
@@ -106,7 +112,7 @@ body {
 
 .quota-row {
   padding: 10px 0;
-  border-bottom: 1px solid #f1f3f5;
+  border-bottom: 1px solid color-mix(in srgb, var(--bg-color), #000 6%);
 }
 .quota-row:last-child {
   border-bottom: none;
@@ -188,7 +194,7 @@ body {
 }
 
 .status-banner.loading {
-  background: #f7f8fa;
+  background: color-mix(in srgb, var(--bg-color), #000 4%);
   color: #86909c;
 }
 
@@ -217,8 +223,8 @@ body {
   padding: 6px 14px;
   font-size: 11px;
   color: #86909c;
-  background: #fafbfc;
-  border-top: 1px solid #eef0f3;
+  background: var(--bg-color-elevated);
+  border-top: 1px solid var(--border-color);
 }
 
 .footer .refresh-btn {
@@ -246,7 +252,7 @@ body {
 
 .modal {
   width: 380px;
-  background: white;
+  background: var(--bg-color);
   border-radius: 8px;
   padding: 18px 20px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.15);

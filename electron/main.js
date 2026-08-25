@@ -22,7 +22,19 @@ function writeConfig(cfg) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf-8');
 }
 
+function clampOpacity(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(1, Math.max(0.3, n));
+}
+
+function applyWindowOpacity(v) {
+  if (mainWindow) mainWindow.setOpacity(clampOpacity(v));
+}
+
 function createWindow() {
+  const cfg = readConfig();
+
   mainWindow = new BrowserWindow({
     width: 520,
     height: 280,
@@ -30,11 +42,10 @@ function createWindow() {
     minHeight: 220,
     alwaysOnTop: true,
     frame: false,
-    transparent: false,
+    transparent: true,
     resizable: true,
     skipTaskbar: false,
     title: 'MiniMax Token Usage',
-    backgroundColor: '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -44,13 +55,14 @@ function createWindow() {
 
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  applyWindowOpacity(cfg.opacity ?? 0.95);
 
   if (process.platform === 'darwin') {
     app.dock && app.dock.hide();
   }
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5174');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
@@ -102,6 +114,10 @@ ipcMain.handle('config:get', () => {
     cfg.apiKey = '';
   }
   cfg.hasApiKey = !!cfg.apiKey;
+  cfg.opacity = clampOpacity(cfg.opacity ?? 0.95);
+  cfg.backgroundColor = typeof cfg.backgroundColor === 'string' && cfg.backgroundColor.trim()
+    ? cfg.backgroundColor
+    : '#ffffff';
   delete cfg.apiKeyEncrypted;
   return cfg;
 });
@@ -127,6 +143,13 @@ ipcMain.handle('config:set', (_evt, payload) => {
       mainWindow.setAlwaysOnTop(cfg.alwaysOnTop, 'floating');
     }
   }
+  if (payload.opacity !== undefined) {
+    cfg.opacity = clampOpacity(payload.opacity);
+    applyWindowOpacity(cfg.opacity);
+  }
+  if (payload.backgroundColor !== undefined) {
+    cfg.backgroundColor = String(payload.backgroundColor) || '#ffffff';
+  }
   writeConfig(cfg);
   return { ok: true };
 });
@@ -135,6 +158,11 @@ ipcMain.handle('window:minimize', () => mainWindow && mainWindow.hide());
 ipcMain.handle('window:set-always-on-top', (_evt, flag) => {
   if (mainWindow) mainWindow.setAlwaysOnTop(!!flag, 'floating');
   return { ok: true };
+});
+ipcMain.handle('window:set-opacity', (_evt, value) => {
+  const v = clampOpacity(value);
+  applyWindowOpacity(v);
+  return { ok: true, opacity: v };
 });
 
 app.whenReady().then(() => {

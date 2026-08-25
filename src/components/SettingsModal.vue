@@ -33,6 +33,42 @@
         </label>
       </div>
 
+      <div class="form-row">
+        <label>
+          窗口透明度
+          <span class="opacity-value">{{ Math.round(opacity * 100) }}%</span>
+        </label>
+        <input
+          type="range"
+          min="0.3"
+          max="1"
+          step="0.05"
+          v-model.number="opacity"
+        />
+      </div>
+
+      <div class="form-row">
+        <label>背景颜色</label>
+        <div class="color-presets">
+          <button
+            v-for="c in presetColors"
+            :key="c"
+            type="button"
+            :class="['color-swatch', { active: backgroundColor === c }]"
+            :style="{ background: c }"
+            :title="c"
+            @click="backgroundColor = c"
+          ></button>
+          <input
+            type="color"
+            v-model="backgroundColor"
+            class="color-input"
+            title="自定义颜色"
+          />
+        </div>
+        <div class="hint">当前：{{ backgroundColor }}</div>
+      </div>
+
       <div class="actions">
         <button class="btn ghost" @click="$emit('close')">取消</button>
         <button class="btn primary" @click="save">保存</button>
@@ -44,12 +80,24 @@
 <script>
 import { ref } from 'vue';
 
+const PRESET_COLORS = [
+  '#ffffff',
+  '#f4f5f7',
+  '#e8f0fe',
+  '#fff7e6',
+  '#e6f7f0',
+  '#1f2328',
+];
+
 export default {
   emits: ['close', 'saved'],
   setup(_props, { emit }) {
     const apiKey = ref('');
     const baseUrl = ref('https://www.minimax.io');
     const alwaysOnTop = ref(true);
+    const opacity = ref(0.95);
+    const backgroundColor = ref('#ffffff');
+    const presetColors = PRESET_COLORS;
 
     async function loadInitial() {
       if (!window.electronAPI) return;
@@ -57,6 +105,10 @@ export default {
       apiKey.value = cfg.apiKey || '';
       baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
       alwaysOnTop.value = cfg.alwaysOnTop !== false;
+      if (typeof cfg.opacity === 'number') opacity.value = cfg.opacity;
+      if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
+        backgroundColor.value = cfg.backgroundColor;
+      }
     }
     loadInitial();
 
@@ -66,14 +118,74 @@ export default {
         apiKey: apiKey.value,
         baseUrl: baseUrl.value,
         alwaysOnTop: alwaysOnTop.value,
+        opacity: opacity.value,
+        backgroundColor: backgroundColor.value,
       });
       emit('saved', {
         baseUrl: baseUrl.value,
         alwaysOnTop: alwaysOnTop.value,
+        opacity: opacity.value,
+        backgroundColor: backgroundColor.value,
       });
     }
 
-    return { apiKey, baseUrl, alwaysOnTop, save };
+    return {
+      apiKey, baseUrl, alwaysOnTop,
+      opacity, backgroundColor, presetColors,
+      save,
+    };
   },
 };
 </script>
+
+<style scoped>
+.opacity-value {
+  float: right;
+  color: #86909c;
+  font-weight: normal;
+  font-size: 11px;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 4px 0 0;
+  accent-color: #5b8def;
+}
+
+.color-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid #c9cdd4;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.08);
+}
+
+.color-swatch.active {
+  box-shadow: 0 0 0 2px #5b8def;
+  border-color: #5b8def;
+}
+
+.color-input {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #c9cdd4;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+</style>

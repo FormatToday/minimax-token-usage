@@ -103,7 +103,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { fetchQuotaRemains, aggregateUsage, formatRemainTime } from './api/quota.js';
 import SettingsModal from './components/SettingsModal.vue';
 
@@ -117,6 +117,8 @@ export default {
     const baseUrl = ref('https://www.minimax.io');
     const hasApiKey = ref(false);
     const alwaysOnTop = ref(true);
+    const opacity = ref(0.95);
+    const backgroundColor = ref('#ffffff');
 
     const interval5h = ref(null);
     const weekly = ref(null);
@@ -136,7 +138,21 @@ export default {
       hasApiKey: hasApiKey.value,
       baseUrl: baseUrl.value,
       alwaysOnTop: alwaysOnTop.value,
+      opacity: opacity.value,
+      backgroundColor: backgroundColor.value,
     }));
+
+    watch(backgroundColor, (val) => {
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--bg-color', val || '#ffffff');
+      }
+    }, { immediate: true });
+
+    watch(opacity, (val) => {
+      if (window.electronAPI && typeof window.electronAPI.setOpacity === 'function') {
+        window.electronAPI.setOpacity(val);
+      }
+    });
 
     const maxUsage = computed(() => {
       const candidates = [
@@ -194,6 +210,12 @@ export default {
       baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
       hasApiKey.value = !!cfg.hasApiKey;
       alwaysOnTop.value = cfg.alwaysOnTop !== false;
+      if (typeof cfg.opacity === 'number') {
+        opacity.value = cfg.opacity;
+      }
+      if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
+        backgroundColor.value = cfg.backgroundColor;
+      }
     }
 
     async function refresh() {
@@ -261,6 +283,7 @@ export default {
 
     return {
       apiKey, hasApiKey, config,
+      opacity, backgroundColor,
       interval5h, weekly, video,
       loading, loaded, error, lastUpdated,
       settingsOpen, footerText, statusDotClass, statusTitle,
