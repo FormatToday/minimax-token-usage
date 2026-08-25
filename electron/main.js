@@ -165,6 +165,19 @@ ipcMain.handle('window:set-opacity', (_evt, value) => {
   applyWindowOpacity(v);
   return { ok: true, opacity: v };
 });
+ipcMain.handle('window:resize', (_evt, width, height) => {
+  if (!mainWindow) return { ok: false };
+  const w = Number(width);
+  const h = Number(height);
+  if (!Number.isFinite(w) || !Number.isFinite(h)) return { ok: false };
+  const [curW, curH] = mainWindow.getSize();
+  const targetW = Math.max(360, Math.round(w));
+  const targetH = Math.max(220, Math.round(h));
+  if (curW !== targetW || curH !== targetH) {
+    mainWindow.setSize(targetW, targetH);
+  }
+  return { ok: true };
+});
 
 app.whenReady().then(() => {
   createWindow();

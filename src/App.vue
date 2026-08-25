@@ -132,6 +132,8 @@ export default {
     let refreshTimer = null;
     let tickTimer = null;
     const now = ref(Date.now());
+    const SETTINGS_HEIGHT = 540;
+    let preSettingsSize = null;
 
     watch(backgroundColor, (val) => {
       if (typeof document !== 'undefined') {
@@ -254,6 +256,19 @@ export default {
     function openSettings() {
       settingsOpen.value = true;
     }
+
+    async function resizeForSettings(open) {
+      if (!window.electronAPI?.resizeWindow) return;
+      if (open) {
+        preSettingsSize = [window.innerWidth, window.innerHeight];
+        await window.electronAPI.resizeWindow(preSettingsSize[0], SETTINGS_HEIGHT);
+      } else if (preSettingsSize) {
+        await window.electronAPI.resizeWindow(preSettingsSize[0], preSettingsSize[1]);
+        preSettingsSize = null;
+      }
+    }
+
+    watch(settingsOpen, resizeForSettings);
 
     async function onSaved() {
       settingsOpen.value = false;

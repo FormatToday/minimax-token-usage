@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('window:set-always-on-top', flag),
   setOpacity: (value) => ipcRenderer.invoke('window:set-opacity', value),
+  resizeWindow: (width, height) => ipcRenderer.invoke('window:resize', width, height),
 });

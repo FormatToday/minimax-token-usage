@@ -248,6 +248,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 100;
+  overflow-y: auto;
 }
 
 .modal {
@@ -256,6 +257,8 @@ body {
   border-radius: 8px;
   padding: 18px 20px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
 }
 
 .modal h3 {
