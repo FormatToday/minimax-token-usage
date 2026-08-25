@@ -9,3 +9,13 @@ build/icon.icns
 build/icon.png
 release/
 *.tgz
+
+# 本地敏感配置 / 凭证（防御性兜底）
+.env
+.env.*
+*.pem
+*.key
+*.p12
+config.local.*
+secrets.*
+*.local.json
