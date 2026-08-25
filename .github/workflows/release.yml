@@ -1,0 +1,58 @@
+name: Release
+
+# 推送 v* 形式的 tag 时自动构建并发布到 GitHub Releases
+# 用法：git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: win
+            os: windows-latest
+          - target: mac
+            os: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 跳过代码签名与公证（无 Apple Developer ID / 代码签名证书）
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run package:${{ matrix.target }} -- --publish always
+
+      # 兜底：即使发布到 Release 失败，也能从 workflow artifacts 下载安装包
+      - name: Upload artifacts (fallback)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-build
+          if-no-files-found: ignore
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.blockmap
+            release/*.yml

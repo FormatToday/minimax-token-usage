@@ -89,6 +89,19 @@ npm run clean:builder-cache
 
 打包产物在 `release/` 目录下。
 
+### 5. 自动发布到 GitHub Releases
+
+项目自带 `.github/workflows/release.yml`：推送 `v*` 形式的 tag 时自动在 Windows + macOS 上并行构建，并通过 `electron-builder` 把产物上传到 Release。
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+- macOS 没配置 Apple Developer ID，构建出的 DMG 是未签名/未公证的，安装时需要在「系统设置 → 隐私与安全性」点「仍要打开」绕过 Gatekeeper
+- Windows 没配置代码签名证书，SmartScreen 会提示「未知发布者」
+- 任一目标失败不影响另一个（`fail-fast: false`），失败的那边的产物仍会作为 workflow artifact 兜底
+
 > ⚠️ **Windows 打包踩坑**：`electron-builder` 会解压 `winCodeSign` 包，里面带了 darwin 的 `libcrypto.dylib` / `libssl.dylib` 软链接。7za 在标准用户权限下无法创建符号链接，会报：
 >
 > ```

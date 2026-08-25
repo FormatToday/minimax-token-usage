@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "description": "桌面置顶小工具：查询 MiniMax Token Plan (Coding Plan) 使用量",
   "main": "electron/main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FormatToday/minimax-token-usage.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FormatToday/minimax-token-usage/issues"
+  },
+  "homepage": "https://github.com/FormatToday/minimax-token-usage",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5174 && electron .\"",
     "dev:vite": "vite",
@@ -34,6 +42,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
     }
   },
   "keywords": [
