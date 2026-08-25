@@ -79,9 +79,28 @@ npm run package:win
 
 # macOS 安装包 (.dmg)
 npm run package:mac
+
+# Windows 干净构建（先清掉 electron-builder 缓存，再打包）
+npm run package:win:clean
+
+# 仅清缓存
+npm run clean:builder-cache
 ```
 
 打包产物在 `release/` 目录下。
+
+> ⚠️ **Windows 打包踩坑**：`electron-builder` 会解压 `winCodeSign` 包，里面带了 darwin 的 `libcrypto.dylib` / `libssl.dylib` 软链接。7za 在标准用户权限下无法创建符号链接，会报：
+>
+> ```
+> ERROR: Cannot create symbolic link : 客户端没有所需的特权
+> ```
+>
+> 一次性解决，二选一：
+>
+> - **开 Windows 开发者模式**：设置 → 隐私和安全 → 开发者选项 → 打开「开发人员模式」
+> - **用管理员身份运行 PowerShell/cmd** 后再执行 `npm run package:win`
+>
+> 如果之前已留下损坏的缓存目录，先跑 `npm run clean:builder-cache` 或 `npm run package:win:clean` 清掉再重试。
 
 ## 使用方法
 
