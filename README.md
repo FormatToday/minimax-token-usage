@@ -100,13 +100,31 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Windows + macOS 并行构建，`electron-builder` 把 `.exe` / `.dmg` 上传到同名 Release。
+Windows + macOS 并行构建。每个平台会同时产出两种变体（安装版 + 便携版），都上传到同名 Release：
 
-**② Actions 页面手动触发 → 只构建，不发布**
+| 平台 | 安装版 | 便携版 |
+| --- | --- | --- |
+| Windows | `MiniMax Token Usage Setup 1.0.0.exe`（NSIS 安装器） | `win-unpacked/`（绿色版，解压即用） |
+| macOS | `MiniMax Token Usage-1.0.0-arm64.dmg` | `MiniMax Token Usage.app`（zip 内） |
 
-在 GitHub 仓库页 → Actions → Release → Run workflow。产物会作为 workflow artifact 上传，从 `Artifacts` 区域下载，不污染 Release 列表。常用于本地不方便构建时验证打包链路。
+**② Actions 页面手动触发 → 4 个独立 Artifacts**
 
-- macOS 没配置 Apple Developer ID，构建出的 DMG 是未签名/未公证的，安装时需要在「系统设置 → 隐私与安全性」点「仍要打开」绕过 Gatekeeper
+在 GitHub 仓库页 → Actions → Release → Run workflow。弹窗里有两个选项：
+
+- **publish**（默认 false）：勾上后也会把产物推到 GitHub Releases；不勾则只上传到当前 run 的 Artifacts 区域
+
+无论 publish 怎么选，每次手动触发都会在 Artifacts 区域产出 4 个带 `.zip` 后缀的独立文件：
+
+| Artifact | 平台 / 变体 | 内容 |
+| --- | --- | --- |
+| `win-installer.zip` | Windows 安装版 | `*Setup*.exe` + `*.exe.blockmap` + `latest.yml` |
+| `win-portable.zip` | Windows 便携版 | `win-unpacked/` 完整目录，解压即用 |
+| `mac-installer.zip` | macOS 安装版 | `*.dmg` + `*.dmg.blockmap` + `latest-mac.yml` |
+| `mac-portable.zip` | macOS 便携版 | `.app` bundle，解压拖入 Applications 即可 |
+
+> ℹ️ 手动触发默认只在 Actions Artifacts，不出现在仓库右侧 Releases，是为了避免误操作污染正式发布列表。需要发布时勾上 publish 即可。
+
+- macOS 没配置 Apple Developer ID，构建出的 DMG / app 是未签名/未公证的，安装时需要在「系统设置 → 隐私与安全性」点「仍要打开」绕过 Gatekeeper
 - Windows 没配置代码签名证书，SmartScreen 会提示「未知发布者」
 - 任一目标失败不影响另一个（`fail-fast: false`），失败的那边的产物仍会作为 workflow artifact 兜底
 

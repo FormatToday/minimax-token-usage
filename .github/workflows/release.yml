@@ -3,12 +3,18 @@ name: Release
 # 两种触发方式：
 #   1. 推送 v* 形式的 tag → 自动构建并发布到 GitHub Releases
 #      用法：git tag v1.0.0 && git push origin v1.0.0
-#   2. 在 Actions 页面手动点击 Run workflow → 只构建，产物作为 artifact 下载
+#   2. 在 Actions 页面手动点击 Run workflow → 默认只构建，产物走 Artifacts
+#      可勾选 publish=true 也会发布到 Releases
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: '是否发布到 GitHub Releases（默认只构建，产物作为 artifact）'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -44,31 +50,68 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # 跳过代码签名与公证（无 Apple Developer ID / 代码签名证书）
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        # tag push → 发布到 Release；手动触发 → 只构建不发布
+          # 三种触发分支：
+          #   tag push                       → --publish always
+          #   workflow_dispatch + publish=t  → --publish always
+          #   workflow_dispatch + publish=f  → --publish never
+          PUBLISH: ${{ inputs.publish && 'true' || '' }}
         # 显式 shell: bash，Windows runner 默认 PowerShell 不认 `[ ... ]`
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger → skip publish, only build"
-            npm run package:${{ matrix.target }} -- --publish never
-          else
-            echo "Tag push → build and publish to GitHub Releases"
-            npm run package:${{ matrix.target }} -- --publish always
-          fi
+          case "${{ github.event_name }}/|${PUBLISH:-}" in
+            push/*)
+              echo "→ Tag push: build and publish to GitHub Releases"
+              npm run package:${{ matrix.target }} -- --publish always
+              ;;
+            workflow_dispatch/true)
+              echo "→ Manual trigger (publish=true): build and publish to GitHub Releases"
+              npm run package:${{ matrix.target }} -- --publish always
+              ;;
+            workflow_dispatch/*)
+              echo "→ Manual trigger: build only, artifacts will be uploaded"
+              npm run package:${{ matrix.target }} -- --publish never
+              ;;
+          esac
 
-      # 手动触发时这是获取安装包的主途径；tag push 时则作为发布失败的兜底
-      # electron-builder 默认输出到 dist/，不是 release/
-      - name: Upload artifacts
-        if: always()
+      # ────────── Windows 产物 ──────────
+      - name: Upload win installer (.exe)
+        if: matrix.target == 'win' && always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}-build
+          name: win-installer.zip
           if-no-files-found: ignore
           path: |
-            dist/*.exe
+            dist/*Setup*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
+
+      - name: Upload win portable (免安装绿色版)
+        if: matrix.target == 'win' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-portable.zip
+          if-no-files-found: ignore
+          path: dist/win-unpacked
+
+      # ────────── macOS 产物 ──────────
+      - name: Upload mac installer (.dmg)
+        if: matrix.target == 'mac' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-installer.zip
+          if-no-files-found: ignore
+          path: |
             dist/*.dmg
-            dist/*.zip
-            dist/*.blockmap
-            dist/*.yml
-            dist/*-mac.yml
-            dist/latest*.yml
+            dist/*.dmg.blockmap
+            dist/latest-mac.yml
+
+      - name: Upload mac portable (.app)
+        if: matrix.target == 'mac' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-portable.zip
+          if-no-files-found: ignore
+          path: |
+            dist/mac
+            dist/mac-arm64
+            dist/mac-x64
