@@ -112,15 +112,15 @@ export function aggregateUsage(modelRemains) {
 
   let video = null;
   if (videoLike) {
-    const total = videoLike.current_weekly_total_count || 0;
-    const used = videoLike.current_weekly_usage_count || 0;
+    const total = videoLike.current_interval_total_count || 0;
+    const used = videoLike.current_interval_usage_count || 0;
     video = {
       model: videoLike.model_name,
       used,
       total,
       percent: total > 0 ? Math.max(0, Math.min(100, Math.round((used / total) * 100))) : 0,
       remainsTime: msToSeconds(videoLike.remains_time),
-      status: videoLike.current_weekly_status,
+      status: videoLike.current_interval_status ?? videoLike.current_weekly_status,
     };
   }
 
