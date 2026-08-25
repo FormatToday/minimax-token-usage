@@ -1,0 +1,55 @@
+{
+  "name": "minimax-token-usage",
+  "version": "1.0.0",
+  "description": "桌面置顶小工具：查询 MiniMax Token Plan (Coding Plan) 使用量",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron .",
+    "build": "vite build",
+    "start": "electron .",
+    "package": "vite build && electron-builder",
+    "package:win": "vite build && electron-builder --win",
+    "package:mac": "vite build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.zhangqin.minimax-token-usage",
+    "productName": "MiniMax Token Usage",
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "keywords": [
+    "minimax",
+    "coding-plan",
+    "token-plan",
+    "electron",
+    "vue"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "vite": "^5.4.11",
+    "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  }
+}

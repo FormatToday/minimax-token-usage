@@ -1,0 +1,273 @@
+<template>
+  <div class="title-bar">
+    <div class="brand">
+      <span :class="['brand-dot', statusDotClass]" :title="statusTitle"></span>
+      <span>MiniMax Token Plan</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" @click="refresh" title="立即刷新">↻</button>
+      <button class="icon-btn" @click="openSettings" title="设置">⚙</button>
+      <button class="icon-btn close" @click="minimize" title="隐藏到托盘">×</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div v-if="loading && !loaded" class="status-banner loading">
+      正在加载使用量数据…
+    </div>
+
+    <div v-else-if="error" class="status-banner error">
+      <span>{{ error }}</span>
+      <a class="err-action" @click="openSettings">前往设置</a>
+    </div>
+
+    <div v-else-if="!hasApiKey" class="status-banner empty">
+      请先在设置中填入 API Key (Subscription Key)。
+      <a class="err-action" @click="openSettings">打开设置</a>
+    </div>
+
+    <template v-else>
+      <div class="quota-row">
+        <div class="head">
+          <div>
+            <div class="label">5h 限额</div>
+            <div class="sub" v-if="interval5h">{{ formatRemainTime(interval5h.maxRemainsTime) }}后重置</div>
+            <div class="sub" v-else>暂无数据</div>
+          </div>
+          <div class="right">
+            <div class="percent">总额度 {{ totalDisplay(interval5h) }}%</div>
+            <div class="used">已用 {{ usedDisplay(interval5h) }}%</div>
+          </div>
+        </div>
+        <div class="bar">
+          <div
+            :class="['fill', fillClass(interval5h ? interval5h.usedPercent : 0)]"
+            :style="{ width: (interval5h ? interval5h.usedPercent : 0) + '%' }"
+          ></div>
+        </div>
+      </div>
+
+      <div class="quota-row">
+        <div class="head">
+          <div>
+            <div class="label">周限额</div>
+            <div class="sub" v-if="weekly">{{ formatRemainTime(weekly.maxRemainsTime) }}后重置</div>
+            <div class="sub" v-else>暂无数据</div>
+          </div>
+          <div class="right">
+            <div class="percent">总额度 {{ totalDisplay(weekly) }}%</div>
+            <div class="used">已用 {{ usedDisplay(weekly) }}%</div>
+          </div>
+        </div>
+        <div class="bar">
+          <div
+            :class="['fill', fillClass(weekly ? weekly.usedPercent : 0)]"
+            :style="{ width: Math.min(100, weekly ? weekly.usedPercent : 0) + '%' }"
+          ></div>
+        </div>
+      </div>
+
+      <div class="quota-row">
+        <div class="head">
+          <div>
+            <div class="label">视频赠送</div>
+            <div class="sub" v-if="video">{{ formatRemainTime(video.remainsTime) }}后重置</div>
+            <div class="sub" v-else>暂无数据</div>
+          </div>
+          <div class="right">
+            <div class="percent" v-if="video">{{ video.used }} / {{ video.total }} 已用</div>
+            <div class="percent" v-else>—</div>
+          </div>
+        </div>
+        <div class="bar">
+          <div
+            class="fill video"
+            :style="{ width: (video ? video.percent : 0) + '%' }"
+          ></div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div class="footer">
+    <span>{{ footerText }}</span>
+    <button class="refresh-btn" @click="refresh">{{ loaded ? '立即刷新' : '重试' }}</button>
+  </div>
+
+  <SettingsModal
+    v-if="settingsOpen"
+    :config="config"
+    @close="settingsOpen = false"
+    @saved="onSaved"
+  />
+</template>
+
+<script>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { fetchQuotaRemains, aggregateUsage, formatRemainTime } from './api/quota.js';
+import SettingsModal from './components/SettingsModal.vue';
+
+const DEFAULT_REFRESH_MS = 60 * 1000;
+const TICK_MS = 1000;
+
+export default {
+  components: { SettingsModal },
+  setup() {
+    const apiKey = ref('');
+    const baseUrl = ref('https://www.minimax.io');
+    const hasApiKey = ref(false);
+    const alwaysOnTop = ref(true);
+
+    const interval5h = ref(null);
+    const weekly = ref(null);
+    const video = ref(null);
+
+    const loading = ref(false);
+    const loaded = ref(false);
+    const error = ref('');
+    const lastUpdated = ref(null);
+    const settingsOpen = ref(false);
+
+    let refreshTimer = null;
+    let tickTimer = null;
+    const now = ref(Date.now());
+
+    const config = computed(() => ({
+      hasApiKey: hasApiKey.value,
+      baseUrl: baseUrl.value,
+      alwaysOnTop: alwaysOnTop.value,
+    }));
+
+    const maxUsage = computed(() => {
+      const candidates = [
+        interval5h.value?.usedPercent ?? 0,
+        Math.min(100, weekly.value?.usedPercent ?? 0),
+      ];
+      return Math.max(...candidates);
+    });
+
+    const statusDotClass = computed(() => {
+      if (error.value) return 'error';
+      if (!loaded.value) return 'idle';
+      if (maxUsage.value >= 80) return 'error';
+      if (maxUsage.value >= 50) return 'warn';
+      return '';
+    });
+
+    const statusTitle = computed(() => {
+      if (error.value) return '错误';
+      if (!loaded.value) return '空闲';
+      return `已用 ${maxUsage.value.toFixed(0)}%`;
+    });
+
+    const footerText = computed(() => {
+      if (loading.value && !loaded.value) return '正在加载…';
+      if (error.value) return `更新失败: ${error.value.slice(0, 30)}`;
+      if (!lastUpdated.value) return '尚未拉取';
+      const diff = Math.max(0, Math.floor((now.value - lastUpdated.value) / 1000));
+      const m = Math.floor(diff / 60);
+      const s = diff % 60;
+      return `上次更新: ${m}分${s}秒前`;
+    });
+
+    function totalDisplay(q) {
+      if (!q) return 100;
+      if (q.usedPercent > 100) return Math.round(q.usedPercent);
+      return 100;
+    }
+
+    function usedDisplay(q) {
+      if (!q) return 0;
+      return Number(q.usedPercent.toFixed(q.usedPercent < 10 ? 1 : 0));
+    }
+
+    function fillClass(percent) {
+      if (percent >= 80) return 'error';
+      if (percent >= 50) return 'warn';
+      return '';
+    }
+
+    async function loadConfig() {
+      if (!window.electronAPI) return;
+      const cfg = await window.electronAPI.getConfig();
+      apiKey.value = cfg.apiKey || '';
+      baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
+      hasApiKey.value = !!cfg.hasApiKey;
+      alwaysOnTop.value = cfg.alwaysOnTop !== false;
+    }
+
+    async function refresh() {
+      if (!apiKey.value) {
+        error.value = '';
+        loaded.value = false;
+        return;
+      }
+      error.value = '';
+      loading.value = true;
+      try {
+        const list = await fetchQuotaRemains({
+          apiKey: apiKey.value,
+          baseUrl: baseUrl.value,
+        });
+        const agg = aggregateUsage(list);
+        interval5h.value = agg.interval5h;
+        weekly.value = agg.weekly;
+        video.value = agg.video;
+        loaded.value = true;
+        lastUpdated.value = Date.now();
+      } catch (e) {
+        error.value = e?.message || String(e);
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    function scheduleRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(refresh, DEFAULT_REFRESH_MS);
+    }
+
+    function startTick() {
+      if (tickTimer) clearInterval(tickTimer);
+      tickTimer = setInterval(() => { now.value = Date.now(); }, TICK_MS);
+    }
+
+    function openSettings() {
+      settingsOpen.value = true;
+    }
+
+    async function onSaved(saved) {
+      settingsOpen.value = false;
+      await loadConfig();
+      if (saved?.baseUrl) baseUrl.value = saved.baseUrl;
+      refresh();
+    }
+
+    async function minimize() {
+      if (window.electronAPI) await window.electronAPI.minimize();
+    }
+
+    onMounted(async () => {
+      startTick();
+      await loadConfig();
+      await refresh();
+      scheduleRefresh();
+    });
+
+    onBeforeUnmount(() => {
+      if (refreshTimer) clearInterval(refreshTimer);
+      if (tickTimer) clearInterval(tickTimer);
+    });
+
+    return {
+      apiKey, hasApiKey, config,
+      interval5h, weekly, video,
+      loading, loaded, error, lastUpdated,
+      settingsOpen, footerText, statusDotClass, statusTitle,
+      now,
+      refresh, openSettings, onSaved, minimize,
+      formatRemainTime, totalDisplay, usedDisplay, fillClass,
+    };
+  },
+};
+</script>

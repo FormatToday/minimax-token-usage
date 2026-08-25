@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+*.log
+.vscode
+.idea
+build/icon.ico
+build/icon.icns
+build/icon.png
+release/
+*.tgz
