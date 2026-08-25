@@ -45,6 +45,8 @@ jobs:
           # 跳过代码签名与公证（无 Apple Developer ID / 代码签名证书）
           CSC_IDENTITY_AUTO_DISCOVERY: false
         # tag push → 发布到 Release；手动触发 → 只构建不发布
+        # 显式 shell: bash，Windows runner 默认 PowerShell 不认 `[ ... ]`
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual trigger → skip publish, only build"
@@ -55,6 +57,7 @@ jobs:
           fi
 
       # 手动触发时这是获取安装包的主途径；tag push 时则作为发布失败的兜底
+      # electron-builder 默认输出到 dist/，不是 release/
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,8 +65,10 @@ jobs:
           name: ${{ matrix.target }}-build
           if-no-files-found: ignore
           path: |
-            release/*.exe
-            release/*.dmg
-            release/*.zip
-            release/*.blockmap
-            release/*.yml
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.blockmap
+            dist/*.yml
+            dist/*-mac.yml
+            dist/latest*.yml

@@ -87,7 +87,7 @@ npm run package:win:clean
 npm run clean:builder-cache
 ```
 
-打包产物在 `release/` 目录下。
+打包产物在 `dist/` 目录下（如 `dist/MiniMax Token Usage Setup 1.0.0.exe`、`dist/MiniMax Token Usage-1.0.0-arm64.dmg`）。
 
 ### 5. 自动发布到 GitHub Releases
 
