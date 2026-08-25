@@ -18,9 +18,9 @@
     "build": "vite build",
     "start": "electron .",
     "package": "vite build && electron-builder",
-    "package:win": "vite build && electron-builder --win",
-    "package:win:clean": "node scripts/clean-builder-cache.js && vite build && electron-builder --win",
-    "package:mac": "vite build && electron-builder --mac",
+"package:win": "vite build && electron-builder --win --x64 && node scripts/clean-artifacts.js",
+    "package:win:clean": "node scripts/clean-builder-cache.js && vite build && electron-builder --win --x64 && node scripts/clean-artifacts.js",
+    "package:mac": "vite build && electron-builder --mac && node scripts/clean-artifacts.js",
     "clean:builder-cache": "node scripts/clean-builder-cache.js",
     "postinstall": "node scripts/fix-electron-path.js"
   },
@@ -35,7 +35,11 @@
       "target": [
         "nsis"
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "electronLanguages": [
+        "en-US",
+        "zh-CN"
+      ]
     },
     "mac": {
       "target": [
@@ -53,10 +57,8 @@
       "runAfterFinish": true,
       "shortcutName": "MiniMax Token Usage"
     },
-    "publish": {
-      "provider": "github",
-      "releaseType": "release"
-    }
+    "compression": "maximum",
+    "publish": null
   },
   "keywords": [
     "minimax",
