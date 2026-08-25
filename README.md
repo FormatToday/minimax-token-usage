@@ -2,6 +2,8 @@
 
 桌面置顶小工具，实时显示 **MiniMax Token Plan（原 Coding Plan）** 的使用量。
 
+本项目纯 Vibe Coding，OpenCode + MiniMax自己玩的，原汤化原食说是。
+
 > Token Plan 是 MiniMax 推出的订阅制套餐，前身是 Coding Plan。该工具使用 MiniMax 官方 API `/v1/token_plan/remains` 每分钟查询一次使用量。
 
 ## 功能
@@ -60,7 +62,7 @@ npm install
 npm run dev
 ```
 
-该命令会同时启动 Vite 开发服务器（端口 5173）和 Electron 窗口。
+该命令会同时启动 Vite 开发服务器（端口 5174）和 Electron 窗口。
 
 ### 3. 直接运行（生产模式）
 
