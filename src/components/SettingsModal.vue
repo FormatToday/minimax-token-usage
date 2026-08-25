@@ -71,7 +71,7 @@
 
       <div class="actions">
         <button class="btn ghost" @click="$emit('close')">取消</button>
-        <button class="btn primary" @click="save">保存</button>
+        <button class="btn primary" :disabled="!ready" @click="save">保存</button>
       </div>
     </div>
   </div>
@@ -91,29 +91,39 @@ const PRESET_COLORS = [
 
 export default {
   emits: ['close', 'saved'],
-  setup(_props, { emit }) {
+  setup(_, { emit }) {
     const apiKey = ref('');
     const baseUrl = ref('https://www.minimax.io');
     const alwaysOnTop = ref(true);
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
     const presetColors = PRESET_COLORS;
+    const ready = ref(false);
 
     async function loadInitial() {
-      if (!window.electronAPI) return;
-      const cfg = await window.electronAPI.getConfig();
-      apiKey.value = cfg.apiKey || '';
-      baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
-      alwaysOnTop.value = cfg.alwaysOnTop !== false;
-      if (typeof cfg.opacity === 'number') opacity.value = cfg.opacity;
-      if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
-        backgroundColor.value = cfg.backgroundColor;
+      if (!window.electronAPI) {
+        ready.value = true;
+        return;
+      }
+      try {
+        const cfg = await window.electronAPI.getConfig();
+        apiKey.value = cfg.apiKey || '';
+        baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
+        alwaysOnTop.value = cfg.alwaysOnTop !== false;
+        if (typeof cfg.opacity === 'number') opacity.value = cfg.opacity;
+        if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
+          backgroundColor.value = cfg.backgroundColor;
+        }
+      } catch (e) {
+        console.warn('[SettingsModal] loadInitial failed:', e);
+      } finally {
+        ready.value = true;
       }
     }
     loadInitial();
 
     async function save() {
-      if (!window.electronAPI) return;
+      if (!window.electronAPI || !ready.value) return;
       await window.electronAPI.setConfig({
         apiKey: apiKey.value,
         baseUrl: baseUrl.value,
@@ -132,7 +142,7 @@ export default {
     return {
       apiKey, baseUrl, alwaysOnTop,
       opacity, backgroundColor, presetColors,
-      save,
+      ready, save,
     };
   },
 };

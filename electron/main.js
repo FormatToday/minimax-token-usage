@@ -7,6 +7,7 @@ const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
 let mainWindow = null;
 let tray = null;
+let isQuitting = false;
 
 function readConfig() {
   try {
@@ -69,7 +70,7 @@ function createWindow() {
   }
 
   mainWindow.on('close', (e) => {
-    if (!app.isQuitting) {
+    if (!isQuitting) {
       e.preventDefault();
       mainWindow.hide();
     }
@@ -90,7 +91,7 @@ function createTray() {
     tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: '显示主面板', click: () => mainWindow.show() },
-        { label: '退出', click: () => { app.isQuitting = true; app.quit(); } },
+        { label: '退出', click: () => { isQuitting = true; app.quit(); } },
       ])
     );
     tray.on('click', () => {
@@ -168,10 +169,10 @@ ipcMain.handle('window:set-opacity', (_evt, value) => {
 app.whenReady().then(() => {
   createWindow();
   createTray();
+});
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
 app.on('window-all-closed', () => {
@@ -179,5 +180,5 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  app.isQuitting = true;
+  isQuitting = true;
 });

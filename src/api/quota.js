@@ -124,16 +124,17 @@ export function aggregateUsage(modelRemains) {
 }
 
 export function formatRemainTime(seconds) {
-  if (!seconds || seconds <= 0) return '即将重置';
+  if (!Number.isFinite(seconds) || seconds < 60) return '即将重置';
+
   const totalMin = Math.floor(seconds / 60);
   const d = Math.floor(totalMin / 1440);
   const h = Math.floor((totalMin % 1440) / 60);
-  const m = totalMin % 60;
-  if (d > 0) {
-    return m > 0 ? `${d} 天 ${h} 小时 ${m} 分` : `${d} 天 ${h} 小时`;
-  }
-  if (h > 0) {
-    return m > 0 ? `${h} 小时 ${m} 分` : `${h} 小时`;
-  }
-  return `${m} 分钟后`;
+  const min = totalMin % 60;
+
+  const parts = [];
+  if (d > 0) parts.push(`${d} 天`);
+  if (h > 0) parts.push(`${h} 小时`);
+  if (min > 0) parts.push(`${min} 分钟`);
+
+  return parts.length > 0 ? parts.join(' ') : '即将重置';
 }

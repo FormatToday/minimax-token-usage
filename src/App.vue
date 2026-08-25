@@ -31,7 +31,7 @@
         <div class="head">
           <div>
             <div class="label">5h 限额</div>
-            <div class="sub" v-if="interval5h">{{ formatRemainTime(interval5h.maxRemainsTime) }}后重置</div>
+            <div class="sub" v-if="interval5h">{{ resetLabel(interval5h.maxRemainsTime) }}</div>
             <div class="sub" v-else>暂无数据</div>
           </div>
           <div class="right">
@@ -51,7 +51,7 @@
         <div class="head">
           <div>
             <div class="label">周限额</div>
-            <div class="sub" v-if="weekly">{{ formatRemainTime(weekly.maxRemainsTime) }}后重置</div>
+            <div class="sub" v-if="weekly">{{ resetLabel(weekly.maxRemainsTime) }}</div>
             <div class="sub" v-else>暂无数据</div>
           </div>
           <div class="right">
@@ -71,7 +71,7 @@
         <div class="head">
           <div>
             <div class="label">视频赠送</div>
-            <div class="sub" v-if="video">{{ formatRemainTime(video.remainsTime) }}后重置</div>
+            <div class="sub" v-if="video">{{ resetLabel(video.remainsTime) }}</div>
             <div class="sub" v-else>暂无数据</div>
           </div>
           <div class="right">
@@ -96,7 +96,6 @@
 
   <SettingsModal
     v-if="settingsOpen"
-    :config="config"
     @close="settingsOpen = false"
     @saved="onSaved"
   />
@@ -133,14 +132,6 @@ export default {
     let refreshTimer = null;
     let tickTimer = null;
     const now = ref(Date.now());
-
-    const config = computed(() => ({
-      hasApiKey: hasApiKey.value,
-      baseUrl: baseUrl.value,
-      alwaysOnTop: alwaysOnTop.value,
-      opacity: opacity.value,
-      backgroundColor: backgroundColor.value,
-    }));
 
     watch(backgroundColor, (val) => {
       if (typeof document !== 'undefined') {
@@ -203,6 +194,11 @@ export default {
       return '';
     }
 
+    function resetLabel(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 60) return '即将重置';
+      return `${formatRemainTime(seconds)}后重置`;
+    }
+
     async function loadConfig() {
       if (!window.electronAPI) return;
       const cfg = await window.electronAPI.getConfig();
@@ -219,6 +215,7 @@ export default {
     }
 
     async function refresh() {
+      if (loading.value) return;
       if (!apiKey.value) {
         error.value = '';
         loaded.value = false;
@@ -258,10 +255,9 @@ export default {
       settingsOpen.value = true;
     }
 
-    async function onSaved(saved) {
+    async function onSaved() {
       settingsOpen.value = false;
       await loadConfig();
-      if (saved?.baseUrl) baseUrl.value = saved.baseUrl;
       refresh();
     }
 
@@ -282,14 +278,13 @@ export default {
     });
 
     return {
-      apiKey, hasApiKey, config,
-      opacity, backgroundColor,
+      hasApiKey,
       interval5h, weekly, video,
       loading, loaded, error, lastUpdated,
       settingsOpen, footerText, statusDotClass, statusTitle,
       now,
       refresh, openSettings, onSaved, minimize,
-      formatRemainTime, totalDisplay, usedDisplay, fillClass,
+      resetLabel, totalDisplay, usedDisplay, fillClass,
     };
   },
 };
