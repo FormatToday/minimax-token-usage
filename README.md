@@ -16,7 +16,7 @@
   - **视频赠送**（视频生成配额）
 - ⏰ 每分钟自动刷新一次
 - 📌 窗口始终置顶，可在屏幕上任意拖动
-- 🔐 API Key 通过 Electron `safeStorage` 在本机加密存储（Windows DPAPI / macOS Keychain）
+- 🔐 API Key 通过 Electron `safeStorage` 在本机加密存储（Windows DPAPI）
 - 🪟 关闭窗口后最小化到托盘，不退出进程
 - 🌍 支持全球版（api.minimax.io）和中国版（api.minimaxi.com）
 
@@ -67,9 +67,6 @@ npm start
 # Windows 安装包 (.exe)
 npm run package:win
 
-# macOS 安装包 (.dmg)
-npm run package:mac
-
 # Windows 干净构建（先清掉 electron-builder 缓存，再打包）
 npm run package:win:clean
 
@@ -77,7 +74,7 @@ npm run package:win:clean
 npm run clean:builder-cache
 ```
 
-打包产物在 `dist/` 目录下（如 `dist/MiniMax Token Usage Setup 1.0.0.exe`、`dist/MiniMax Token Usage-1.0.0-arm64.dmg`）。
+打包产物在 `dist/` 目录下（如 `dist/MiniMax Token Usage Setup 1.0.0.exe`）。
 
 ### 5. 自动发布到 GitHub Releases
 
@@ -90,33 +87,28 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Windows + macOS 并行构建。每个平台会同时产出两种变体（安装版 + 便携版），都上传到同名 Release：
+Windows 单平台构建。会同时产出两种变体（安装版 + 便携版），都上传到同名 Release：
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
 | Windows | `MiniMax Token Usage Setup 1.0.0.exe`（NSIS 安装器） | `win-unpacked/`（绿色版，解压即用） |
-| macOS | `MiniMax Token Usage-1.0.0-arm64.dmg` | `MiniMax Token Usage.app`（zip 内） |
 
-**② Actions 页面手动触发 → 4 个独立 Artifacts**
+**② Actions 页面手动触发 → 2 个独立 Artifacts**
 
 在 GitHub 仓库页 → Actions → Release → Run workflow。弹窗里有两个选项：
 
 - **publish**（默认 false）：勾上后也会把产物推到 GitHub Releases；不勾则只上传到当前 run 的 Artifacts 区域
 
-无论 publish 怎么选，每次手动触发都会在 Artifacts 区域产出 4 个带 `.zip` 后缀的独立文件：
+无论 publish 怎么选，每次手动触发都会在 Artifacts 区域产出 2 个带 `.zip` 后缀的独立文件：
 
 | Artifact | 平台 / 变体 | 内容 |
 | --- | --- | --- |
 | `win-installer.zip` | Windows 安装版 | `*Setup*.exe` + `*.exe.blockmap` + `latest.yml` |
 | `win-portable.zip` | Windows 便携版 | `win-unpacked/` 完整目录，解压即用 |
-| `mac-installer.zip` | macOS 安装版 | `*.dmg` + `*.dmg.blockmap` + `latest-mac.yml` |
-| `mac-portable.zip` | macOS 便携版 | `.app` bundle，解压拖入 Applications 即可 |
 
 > ℹ️ 手动触发默认只在 Actions Artifacts，不出现在仓库右侧 Releases，是为了避免误操作污染正式发布列表。需要发布时勾上 publish 即可。
 
-- macOS 没配置 Apple Developer ID，构建出的 DMG / app 是未签名/未公证的，安装时需要在「系统设置 → 隐私与安全性」点「仍要打开」绕过 Gatekeeper
 - Windows 没配置代码签名证书，SmartScreen 会提示「未知发布者」
-- 任一目标失败不影响另一个（`fail-fast: false`），失败的那边的产物仍会作为 workflow artifact 兜底
 
 > ⚠️ **Windows 打包踩坑**：`electron-builder` 会解压 `winCodeSign` 包，里面带了 darwin 的 `libcrypto.dylib` / `libssl.dylib` 软链接。7za 在标准用户权限下无法创建符号链接，会报：
 >

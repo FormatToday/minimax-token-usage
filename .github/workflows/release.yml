@@ -29,8 +29,6 @@ jobs:
         include:
           - target: win
             os: windows-latest
-          - target: mac
-            os: macos-latest
 
     steps:
       - name: Checkout
@@ -92,26 +90,3 @@ jobs:
           name: win-portable-${{ matrix.target }}
           if-no-files-found: ignore
           path: dist/win-unpacked
-
-      # ────────── macOS 产物 ──────────
-      - name: Upload mac installer (.dmg)
-        if: matrix.target == 'mac' && always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: mac-installer-${{ matrix.target }}
-          if-no-files-found: ignore
-          path: |
-            dist/*.dmg
-            dist/*.dmg.blockmap
-            dist/latest-mac.yml
-
-      - name: Upload mac portable (.app)
-        if: matrix.target == 'mac' && always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: mac-portable-${{ matrix.target }}
-          if-no-files-found: ignore
-          path: |
-            dist/mac
-            dist/mac-arm64
-            dist/mac-x64
