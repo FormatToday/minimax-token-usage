@@ -128,6 +128,11 @@ ipcMain.handle('config:get', () => {
   cfg.backgroundColor = typeof cfg.backgroundColor === 'string' && cfg.backgroundColor.trim()
     ? cfg.backgroundColor
     : '#ffffff';
+  cfg.visibleQuotas = {
+    interval5h: cfg.visibleQuotas?.interval5h !== false,
+    weekly: cfg.visibleQuotas?.weekly !== false,
+    video: cfg.visibleQuotas?.video !== false,
+  };
   delete cfg.apiKeyEncrypted;
   return cfg;
 });
@@ -159,6 +164,14 @@ ipcMain.handle('config:set', (_evt, payload) => {
   }
   if (payload.backgroundColor !== undefined) {
     cfg.backgroundColor = String(payload.backgroundColor) || '#ffffff';
+  }
+  if (payload.visibleQuotas !== undefined) {
+    const v = payload.visibleQuotas;
+    cfg.visibleQuotas = {
+      interval5h: !!(v && v.interval5h !== false),
+      weekly: !!(v && v.weekly !== false),
+      video: !!(v && v.video !== false),
+    };
   }
   writeConfig(cfg);
   return { ok: true };

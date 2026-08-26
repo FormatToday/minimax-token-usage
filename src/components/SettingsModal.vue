@@ -48,6 +48,25 @@
       </div>
 
       <div class="form-row">
+        <label>显示的限额</label>
+        <div class="quota-toggles">
+          <label class="toggle-row">
+            <input type="checkbox" v-model="visibleQuotas.interval5h" />
+            <span>5h 限额</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" v-model="visibleQuotas.weekly" />
+            <span>周限额</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" v-model="visibleQuotas.video" />
+            <span>视频赠送</span>
+          </label>
+        </div>
+        <div class="hint">取消勾选后窗口会自动缩小。</div>
+      </div>
+
+      <div class="form-row">
         <label>背景颜色</label>
         <div class="color-presets">
           <button
@@ -97,6 +116,7 @@ export default {
     const alwaysOnTop = ref(true);
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
+    const visibleQuotas = ref({ interval5h: true, weekly: true, video: true });
     const presetColors = PRESET_COLORS;
     const ready = ref(false);
 
@@ -114,6 +134,13 @@ export default {
         if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
           backgroundColor.value = cfg.backgroundColor;
         }
+        if (cfg.visibleQuotas) {
+          visibleQuotas.value = {
+            interval5h: cfg.visibleQuotas.interval5h !== false,
+            weekly: cfg.visibleQuotas.weekly !== false,
+            video: cfg.visibleQuotas.video !== false,
+          };
+        }
       } catch (e) {
         console.warn('[SettingsModal] loadInitial failed:', e);
       } finally {
@@ -130,18 +157,20 @@ export default {
         alwaysOnTop: alwaysOnTop.value,
         opacity: opacity.value,
         backgroundColor: backgroundColor.value,
+        visibleQuotas: { ...visibleQuotas.value },
       });
       emit('saved', {
         baseUrl: baseUrl.value,
         alwaysOnTop: alwaysOnTop.value,
         opacity: opacity.value,
         backgroundColor: backgroundColor.value,
+        visibleQuotas: { ...visibleQuotas.value },
       });
     }
 
     return {
       apiKey, baseUrl, alwaysOnTop,
-      opacity, backgroundColor, presetColors,
+      opacity, backgroundColor, visibleQuotas, presetColors,
       ready, save,
     };
   },
@@ -197,5 +226,27 @@ input[type="range"] {
   border-radius: 4px;
   background: transparent;
   cursor: pointer;
+}
+
+.quota-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #4e5969;
+  cursor: pointer;
+}
+
+.toggle-row input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  accent-color: #5b8def;
 }
 </style>

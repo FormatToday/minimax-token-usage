@@ -27,7 +27,7 @@
     </div>
 
     <template v-else>
-      <div class="quota-row">
+      <div v-if="visibleQuotas.interval5h" class="quota-row">
         <div class="head">
           <div>
             <div class="label">5h 限额</div>
@@ -47,7 +47,7 @@
         </div>
       </div>
 
-      <div class="quota-row">
+      <div v-if="visibleQuotas.weekly" class="quota-row">
         <div class="head">
           <div>
             <div class="label">周限额</div>
@@ -67,7 +67,7 @@
         </div>
       </div>
 
-      <div class="quota-row">
+      <div v-if="visibleQuotas.video" class="quota-row">
         <div class="head">
           <div>
             <div class="label">视频赠送</div>
@@ -102,7 +102,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { fetchQuotaRemains, aggregateUsage, formatRemainTime } from './api/quota.js';
 import SettingsModal from './components/SettingsModal.vue';
 
@@ -118,6 +118,7 @@ export default {
     const alwaysOnTop = ref(true);
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
+    const visibleQuotas = ref({ interval5h: true, weekly: true, video: true });
 
     const interval5h = ref(null);
     const weekly = ref(null);
@@ -214,6 +215,13 @@ export default {
       if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
         backgroundColor.value = cfg.backgroundColor;
       }
+      if (cfg.visibleQuotas) {
+        visibleQuotas.value = {
+          interval5h: cfg.visibleQuotas.interval5h !== false,
+          weekly: cfg.visibleQuotas.weekly !== false,
+          video: cfg.visibleQuotas.video !== false,
+        };
+      }
     }
 
     async function refresh() {
@@ -262,13 +270,29 @@ export default {
       if (open) {
         preSettingsSize = [window.innerWidth, window.innerHeight];
         await window.electronAPI.resizeWindow(preSettingsSize[0], SETTINGS_HEIGHT);
-      } else if (preSettingsSize) {
-        await window.electronAPI.resizeWindow(preSettingsSize[0], preSettingsSize[1]);
-        preSettingsSize = null;
       }
+      // close 时不做 resize, 由 visibleQuotas watch 接管
     }
 
     watch(settingsOpen, resizeForSettings);
+
+    const visibleQuotaCount = computed(() => {
+      const v = visibleQuotas.value;
+      return (v.interval5h ? 1 : 0) + (v.weekly ? 1 : 0) + (v.video ? 1 : 0);
+    });
+
+    const BASE_HEIGHT = 84;
+    const ROW_HEIGHT = 70;
+
+    async function resizeForContent() {
+      if (!window.electronAPI?.resizeWindow) return;
+      if (settingsOpen.value) return;
+      const count = visibleQuotaCount.value;
+      const height = BASE_HEIGHT + ROW_HEIGHT * Math.max(count, 1);
+      await window.electronAPI.resizeWindow(520, height);
+    }
+
+    watch(visibleQuotaCount, resizeForContent);
 
     async function onSaved() {
       settingsOpen.value = false;
@@ -285,6 +309,8 @@ export default {
       await loadConfig();
       await refresh();
       scheduleRefresh();
+      await nextTick();
+      resizeForContent();
     });
 
     onBeforeUnmount(() => {
@@ -297,6 +323,7 @@ export default {
       interval5h, weekly, video,
       loading, loaded, error, lastUpdated,
       settingsOpen, footerText, statusDotClass, statusTitle,
+      visibleQuotas,
       now,
       refresh, openSettings, onSaved, minimize,
       resetLabel, totalDisplay, usedDisplay, fillClass,
