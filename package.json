@@ -1,6 +1,6 @@
 {
   "name": "minimax-token-usage",
-  "version": "v0.0.1",
+  "version": "v0.0.2",
   "description": "桌面置顶小工具：查询 MiniMax Token Plan (Coding Plan) 使用量",
   "main": "electron/main.js",
   "repository": {
