@@ -5,6 +5,7 @@
       <span>MiniMax Token Plan</span>
     </div>
     <div class="actions">
+      <span class="update-time" :title="footerText">{{ footerText }}</span>
       <button class="icon-btn" @click="refresh" title="立即刷新">↻</button>
       <button class="icon-btn" @click="openSettings" title="设置">⚙</button>
       <button class="icon-btn close" @click="minimize" title="隐藏到托盘">×</button>
@@ -87,11 +88,6 @@
         </div>
       </div>
     </template>
-  </div>
-
-  <div class="footer">
-    <span>{{ footerText }}</span>
-    <button class="refresh-btn" @click="refresh">{{ loaded ? '立即刷新' : '重试' }}</button>
   </div>
 
   <SettingsModal

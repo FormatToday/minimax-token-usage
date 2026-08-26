@@ -67,7 +67,17 @@ body {
 .title-bar .actions {
   -webkit-app-region: no-drag;
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.title-bar .update-time {
+  font-size: 11px;
+  color: #86909c;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-btn {
@@ -216,29 +226,6 @@ body {
   text-decoration: underline;
   cursor: pointer;
 }
-
-.footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 14px;
-  font-size: 11px;
-  color: #86909c;
-  background: var(--bg-color-elevated);
-  border-top: 1px solid var(--border-color);
-}
-
-.footer .refresh-btn {
-  -webkit-app-region: no-drag;
-  background: transparent;
-  border: none;
-  color: #5b8def;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 0;
-}
-
-.footer .refresh-btn:hover { text-decoration: underline; }
 
 /* Settings Panel */
 .modal-mask {
