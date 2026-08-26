@@ -4,8 +4,8 @@
       <span :class="['brand-dot', statusDotClass]" :title="statusTitle"></span>
       <span>MiniMax Token Plan</span>
     </div>
+    <span class="update-time" :title="footerText">{{ footerText }}</span>
     <div class="actions">
-      <span class="update-time" :title="footerText">{{ footerText }}</span>
       <button class="icon-btn" @click="refresh" title="立即刷新">↻</button>
       <button class="icon-btn" @click="openSettings" title="设置">⚙</button>
       <button class="icon-btn close" @click="minimize" title="隐藏到托盘">×</button>

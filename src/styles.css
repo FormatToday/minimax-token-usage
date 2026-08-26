@@ -72,12 +72,15 @@ body {
 }
 
 .title-bar .update-time {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  padding-right: 4px;
   font-size: 11px;
   color: #86909c;
-  max-width: 96px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .icon-btn {
