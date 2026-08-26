@@ -285,7 +285,7 @@ export default {
       return (v.interval5h ? 1 : 0) + (v.weekly ? 1 : 0) + (v.video ? 1 : 0);
     });
 
-    const BASE_HEIGHT = 84;
+    const BASE_HEIGHT = 54;
     const ROW_HEIGHT = 70;
 
     async function resizeForContent() {
