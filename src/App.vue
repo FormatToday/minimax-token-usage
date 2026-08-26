@@ -35,8 +35,8 @@
             <div class="sub" v-else>暂无数据</div>
           </div>
           <div class="right">
+            <div class="used"><strong>已用 {{ usedDisplay(interval5h) }}%</strong></div>
             <div class="percent">总额度 {{ totalDisplay(interval5h) }}%</div>
-            <div class="used">已用 {{ usedDisplay(interval5h) }}%</div>
           </div>
         </div>
         <div class="bar">
@@ -55,8 +55,8 @@
             <div class="sub" v-else>暂无数据</div>
           </div>
           <div class="right">
+            <div class="used"><strong>已用 {{ usedDisplay(weekly) }}%</strong></div>
             <div class="percent">总额度 {{ totalDisplay(weekly) }}%</div>
-            <div class="used">已用 {{ usedDisplay(weekly) }}%</div>
           </div>
         </div>
         <div class="bar">

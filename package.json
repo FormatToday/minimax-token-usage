@@ -22,14 +22,15 @@
     "package:win:clean": "node scripts/clean-builder-cache.js && vite build && electron-builder --win --x64 && node scripts/clean-artifacts.js",
     "package:mac": "vite build && electron-builder --mac && node scripts/clean-artifacts.js",
     "clean:builder-cache": "node scripts/clean-builder-cache.js",
-    "postinstall": "node scripts/fix-electron-path.js"
+    "postinstall": "node scripts/fix-electron-path.js && node scripts/build-tray-icon.js"
   },
   "build": {
     "appId": "com.zhangqin.minimax-token-usage",
     "productName": "MiniMax Token Usage",
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "scripts/build-tray-icon.js"
     ],
     "win": {
       "target": [

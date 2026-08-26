@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, safeStorage, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { generateIconBuffer } = require('../scripts/build-tray-icon.js');
 
 const isDev = !app.isPackaged;
 
@@ -83,17 +84,16 @@ function createWindow() {
   });
 }
 
-const TRAY_ICON_PNG =
-  'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADAElEQVR4nM2Xv0ubYRDHhUAaSIhBCiJKrA6BCMGAFUH8NZhBJCgEBDFg6sGhEDCTOgQiCC4JurjooCA4uOgqFHFzE8HVwbVbub+gfR74BMRapVR4M7wcHHff7909d/c+T5uotQX5/atDSNQiohYVtbiotYtaAhlHH8HuQwMIi1pM1DpErVPUukUtKWq9ovYFmUTfiV0Mv/8KIATQZ8D7RC0lagOilhG1QVHLIjPoU9h14xd7qyLvZe3L2yVq/aKWhmxY1EZFbVzUJkWtCjmOfhi7NH5d4Lxajb+Rf6KMPWTkMxwRtQlRmxa1GVHLi9qcqM0j8+insRvBLwVOB7jvBhDGOEkWQ6I2Jmo5SAqitihqRVFbFrUSsoi+gF0OvyFwkuCG3wogRLl6cPpKeWcAXhK1FVFbFbWyqK2LWgVZRr+CXQG/SXDS4Cae98TLAGKcWYrIvfOsqC2Q6RqEm6JWFbWa89tGVtFXsCvhNwvOELhd8PwRQJiu7efsxsjAg3wjww3Idt3M193s77kdsI+so69hV8ZvAZwxcPvhCb8MIMbopGmgHGUsAbblSrfj7BoO4EDUjty5HrsdcII8Qt/Abgu/Ejg5cNPwxJ4HEKJB+hihCRppiXJuAOozPXRZnDqgc1G7cFldIs/RH2K3g98aOHlws/B4vlAzgAgbLMUcTxP1CmdaIzMPfgbplZv9a3e+N8gr9GfYNfCrgFMAdxgezxdpBhClLAMskxlGapXG2qW8p5B8F7Vbl9Wd2wH3yFv0l9gd4LcJziK4o/B4vmgzgDhzmmGj5ZnrMt1d54zPydSTPbjSProd8IR8QH+F3RF+VXCK4I7D4/nizQDa+aEMMjJzLJd1yrhHo11Q7jtIfzibn8hH9NfYHeNXA2cZ3El4PF97M4AEf7Usu32e7q0w5/t0+yVnfk/mnvwX8gn9DXYn+G2DUwJ3Ch7Pl2iZCgTeA4FPQeB7IPBNGPi/oCX+hoHfB1riRhT4nbAlbsUt8S5oiZfRy2oE8jZ8rSIf+jr+DcKP83l4cugAAAAAAElFTkSuQmCC';
+const TRAY_ICON_PNG = generateIconBuffer();
 
 function createTray() {
   try {
-    const iconPath = path.join(__dirname, 'build', 'icon.png');
+    const iconPath = path.join(__dirname, '..', 'build', 'tray-icon.png');
     let icon;
     if (fs.existsSync(iconPath)) {
       icon = nativeImage.createFromPath(iconPath);
     } else {
-      icon = nativeImage.createFromBuffer(Buffer.from(TRAY_ICON_PNG, 'base64'));
+      icon = nativeImage.createFromBuffer(TRAY_ICON_PNG);
     }
     tray = new Tray(icon);
     tray.setToolTip('MiniMax Token Usage');
