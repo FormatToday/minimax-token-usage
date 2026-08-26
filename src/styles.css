@@ -144,12 +144,13 @@ body {
   color: #4e5969;
 }
 
-.quota-row .percent {
+.quota-row .used {
+  margin-top: 2px;
   font-weight: 600;
   color: #1f2328;
 }
 
-.quota-row .used {
+.quota-row .percent {
   margin-top: 2px;
   color: #86909c;
   font-size: 11px;
