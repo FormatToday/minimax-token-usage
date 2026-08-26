@@ -12,9 +12,9 @@
   },
   "homepage": "https://github.com/FormatToday/minimax-token-usage",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5174 && electron .\"",
+    "dev": "node scripts/dev.js",
     "dev:vite": "vite",
-    "dev:electron": "wait-on http://localhost:5174 && electron .",
+    "dev:electron": "node scripts/wait-and-launch.js",
     "build": "vite build",
     "start": "electron .",
     "package": "vite build && electron-builder",
