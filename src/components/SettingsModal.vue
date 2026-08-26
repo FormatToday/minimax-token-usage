@@ -36,15 +36,26 @@
       <div class="form-row">
         <label>
           窗口透明度
-          <span class="opacity-value">{{ Math.round(opacity * 100) }}%</span>
+          <span class="opacity-value">{{ opacityPercent }}%</span>
         </label>
         <input
           type="range"
-          min="0.3"
-          max="1"
-          step="0.05"
-          v-model.number="opacity"
+          min="1"
+          max="100"
+          step="1"
+          v-model.number="opacityPercent"
         />
+      </div>
+
+      <div class="form-row">
+        <label>自动刷新间隔 (分钟)</label>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          v-model.number="refreshIntervalMinutes"
+        />
+        <div class="hint">默认 3 分钟, 取值为正整数。</div>
       </div>
 
       <div class="form-row">
@@ -97,7 +108,7 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const PRESET_COLORS = [
   '#ffffff',
@@ -117,8 +128,24 @@ export default {
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
     const visibleQuotas = ref({ interval5h: true, weekly: true, video: true });
+    const refreshIntervalMinutes = ref(3);
     const presetColors = PRESET_COLORS;
     const ready = ref(false);
+
+    const opacityPercent = computed({
+      get: () => Math.max(1, Math.min(100, Math.round(opacity.value * 100))),
+      set: (val) => {
+        const n = Number(val);
+        if (!Number.isFinite(n)) return;
+        opacity.value = Math.max(0.01, Math.min(1, n / 100));
+      },
+    });
+
+    watch(opacity, (val) => {
+      if (window.electronAPI?.setOpacity) {
+        window.electronAPI.setOpacity(val);
+      }
+    });
 
     async function loadInitial() {
       if (!window.electronAPI) {
@@ -141,6 +168,9 @@ export default {
             video: cfg.visibleQuotas.video !== false,
           };
         }
+        if (typeof cfg.refreshIntervalMinutes === 'number' && cfg.refreshIntervalMinutes >= 1) {
+          refreshIntervalMinutes.value = Math.floor(cfg.refreshIntervalMinutes);
+        }
       } catch (e) {
         console.warn('[SettingsModal] loadInitial failed:', e);
       } finally {
@@ -151,6 +181,7 @@ export default {
 
     async function save() {
       if (!window.electronAPI || !ready.value) return;
+      const minutes = Math.max(1, Math.floor(Number(refreshIntervalMinutes.value) || 3));
       await window.electronAPI.setConfig({
         apiKey: apiKey.value,
         baseUrl: baseUrl.value,
@@ -158,6 +189,7 @@ export default {
         opacity: opacity.value,
         backgroundColor: backgroundColor.value,
         visibleQuotas: { ...visibleQuotas.value },
+        refreshIntervalMinutes: minutes,
       });
       emit('saved', {
         baseUrl: baseUrl.value,
@@ -165,12 +197,14 @@ export default {
         opacity: opacity.value,
         backgroundColor: backgroundColor.value,
         visibleQuotas: { ...visibleQuotas.value },
+        refreshIntervalMinutes: minutes,
       });
     }
 
     return {
       apiKey, baseUrl, alwaysOnTop,
-      opacity, backgroundColor, visibleQuotas, presetColors,
+      opacity, opacityPercent, backgroundColor,
+      visibleQuotas, refreshIntervalMinutes, presetColors,
       ready, save,
     };
   },

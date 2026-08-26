@@ -33,7 +33,13 @@ function writeConfig(cfg) {
 function clampOpacity(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return 1;
-  return Math.min(1, Math.max(0.3, n));
+  return Math.min(1, Math.max(0.01, n));
+}
+
+function clampRefreshMinutes(v) {
+  const n = Math.floor(Number(v));
+  if (!Number.isFinite(n) || n < 1) return 3;
+  return Math.min(1440, n);
 }
 
 function applyWindowOpacity(v) {
@@ -133,6 +139,7 @@ ipcMain.handle('config:get', () => {
     weekly: cfg.visibleQuotas?.weekly !== false,
     video: cfg.visibleQuotas?.video !== false,
   };
+  cfg.refreshIntervalMinutes = clampRefreshMinutes(cfg.refreshIntervalMinutes);
   delete cfg.apiKeyEncrypted;
   return cfg;
 });
@@ -172,6 +179,9 @@ ipcMain.handle('config:set', (_evt, payload) => {
       weekly: !!(v && v.weekly !== false),
       video: !!(v && v.video !== false),
     };
+  }
+  if (payload.refreshIntervalMinutes !== undefined) {
+    cfg.refreshIntervalMinutes = clampRefreshMinutes(payload.refreshIntervalMinutes);
   }
   writeConfig(cfg);
   return { ok: true };

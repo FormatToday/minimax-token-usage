@@ -106,7 +106,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { fetchQuotaRemains, aggregateUsage, formatRemainTime } from './api/quota.js';
 import SettingsModal from './components/SettingsModal.vue';
 
-const DEFAULT_REFRESH_MS = 60 * 1000;
+const DEFAULT_REFRESH_MINUTES = 3;
 const TICK_MS = 1000;
 
 export default {
@@ -119,6 +119,7 @@ export default {
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
     const visibleQuotas = ref({ interval5h: true, weekly: true, video: true });
+    const refreshIntervalMinutes = ref(DEFAULT_REFRESH_MINUTES);
 
     const interval5h = ref(null);
     const weekly = ref(null);
@@ -222,6 +223,9 @@ export default {
           video: cfg.visibleQuotas.video !== false,
         };
       }
+      if (typeof cfg.refreshIntervalMinutes === 'number' && cfg.refreshIntervalMinutes >= 1) {
+        refreshIntervalMinutes.value = cfg.refreshIntervalMinutes;
+      }
     }
 
     async function refresh() {
@@ -253,8 +257,11 @@ export default {
 
     function scheduleRefresh() {
       if (refreshTimer) clearInterval(refreshTimer);
-      refreshTimer = setInterval(refresh, DEFAULT_REFRESH_MS);
+      const ms = Math.max(1, refreshIntervalMinutes.value) * 60 * 1000;
+      refreshTimer = setInterval(refresh, ms);
     }
+
+    watch(refreshIntervalMinutes, scheduleRefresh);
 
     function startTick() {
       if (tickTimer) clearInterval(tickTimer);
@@ -270,8 +277,9 @@ export default {
       if (open) {
         preSettingsSize = [window.innerWidth, window.innerHeight];
         await window.electronAPI.resizeWindow(preSettingsSize[0], SETTINGS_HEIGHT);
+      } else {
+        await resizeForContent();
       }
-      // close 时不做 resize, 由 visibleQuotas watch 接管
     }
 
     watch(settingsOpen, resizeForSettings);
