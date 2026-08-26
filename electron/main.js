@@ -69,6 +69,7 @@ function createWindow() {
 
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  mainWindow.setSkipTaskbar(true);
   applyWindowOpacity(cfg.opacity ?? 0.95);
 
   if (process.platform === 'darwin') {
@@ -87,6 +88,10 @@ function createWindow() {
       e.preventDefault();
       mainWindow.hide();
     }
+  });
+
+  mainWindow.on('show', () => {
+    mainWindow.setSkipTaskbar(true);
   });
 }
 
