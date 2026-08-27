@@ -6,8 +6,12 @@ const { generateIconBuffer } = require('../scripts/build-tray-icon.js');
 const isDev = !app.isPackaged;
 
 if (!isDev) {
+  // 默认走 Electron 默认的 %APPDATA%\<app-name>\，NSIS 升级不会动这里，配置跨升级保留。
+  // 便携模式：在 .exe 同目录放一个 portable.flag 文件即可启用，配置跟 .exe 一起（注意升级时会被替换，请自行备份）。
   const exeDir = path.dirname(app.getPath('exe'));
-  app.setPath('userData', path.join(exeDir, 'userData'));
+  if (fs.existsSync(path.join(exeDir, 'portable.flag'))) {
+    app.setPath('userData', path.join(exeDir, 'userData'));
+  }
 }
 
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');

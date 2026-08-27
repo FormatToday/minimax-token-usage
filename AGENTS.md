@@ -34,7 +34,7 @@
   2. 用管理员 PowerShell 跑
   3. 或先跑 `npm run clean:builder-cache` 清掉损坏缓存再重试
 - **代码签名**：未配置。安装时 SmartScreen 会提示「未知发布者」，CI 里 `CSC_IDENTITY_AUTO_DISCOVERY: false`。
-- **API Key 存储**：用 Electron `safeStorage`（Windows DPAPI），存在 `userData/config.json`。打包态下 `userData` 被重定向到 `.exe` 同目录（`electron/main.js:9-11`）。
+- **API Key 存储**：用 Electron `safeStorage`（Windows DPAPI），存在 `userData/config.json`。打包态默认走 Electron 默认的 `%APPDATA%\<app-name>\`，**NSIS 升级不会动这个目录，配置跨升级保留**。如果需要便携模式，在 `.exe` 同目录放一个空的 `portable.flag` 文件即可启用，配置会跟 `.exe` 一起（注意：升级会被替换，请自行备份）。见 `electron/main.js:8-15`。
 
 ## 目录约定
 - `electron/` 主进程，**不要** import `src/` 里的 Vue 组件
