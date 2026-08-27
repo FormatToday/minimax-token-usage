@@ -112,6 +112,7 @@ export default {
     const baseUrl = ref('https://www.minimax.io');
     const hasApiKey = ref(false);
     const alwaysOnTop = ref(true);
+    const clickThrough = ref(false);
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
     const visibleQuotas = ref({ interval5h: true, weekly: true, video: true });
@@ -142,6 +143,12 @@ export default {
     watch(opacity, (val) => {
       if (window.electronAPI && typeof window.electronAPI.setOpacity === 'function') {
         window.electronAPI.setOpacity(val);
+      }
+    });
+
+    watch(clickThrough, (val) => {
+      if (window.electronAPI && typeof window.electronAPI.setClickThrough === 'function') {
+        window.electronAPI.setClickThrough(val);
       }
     });
 
@@ -206,6 +213,7 @@ export default {
       baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
       hasApiKey.value = !!cfg.hasApiKey;
       alwaysOnTop.value = cfg.alwaysOnTop !== false;
+      clickThrough.value = cfg.clickThrough === true;
       if (typeof cfg.opacity === 'number') {
         opacity.value = cfg.opacity;
       }
@@ -265,7 +273,10 @@ export default {
     }
 
     function openSettings() {
-      settingsOpen.value = true;
+      // 重新拉一次配置，避免用户在托盘里改了鼠标穿透/透明度后设置页里看不到最新值
+      loadConfig().finally(() => {
+        settingsOpen.value = true;
+      });
     }
 
     async function resizeForSettings(open) {
@@ -278,7 +289,22 @@ export default {
       }
     }
 
-    watch(settingsOpen, resizeForSettings);
+    watch(settingsOpen, async (open) => {
+      await resizeForSettings(open);
+      if (!window.electronAPI) return;
+      if (open) {
+        // 设置打开时：强制窗口不透明 + 可点击，避免设置面板透到桌面 / 点不到
+        if (typeof window.electronAPI.setOpacity === 'function') {
+          window.electronAPI.setOpacity(1);
+        }
+        if (typeof window.electronAPI.setClickThrough === 'function') {
+          window.electronAPI.setClickThrough(false);
+        }
+      } else {
+        // 设置关闭：重新读一次配置，opacity / clickThrough 的 watch 会把窗口恢复回去
+        await loadConfig();
+      }
+    });
 
     const visibleQuotaCount = computed(() => {
       const v = visibleQuotas.value;
@@ -299,8 +325,8 @@ export default {
     watch(visibleQuotaCount, resizeForContent);
 
     async function onSaved() {
+      // settingsOpen 设为 false 会触发 watcher，由它统一 loadConfig 恢复透明度/穿透
       settingsOpen.value = false;
-      await loadConfig();
       refresh();
     }
 

@@ -34,6 +34,14 @@
       </div>
 
       <div class="form-row">
+        <label style="display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" v-model="clickThrough" style="width:auto;" />
+          鼠标穿透
+        </label>
+        <div class="hint">开启后窗口会忽略鼠标事件，点击穿透到底层窗口。<br />需要关闭时，请右键托盘图标 → 取消勾选「鼠标穿透」。</div>
+      </div>
+
+      <div class="form-row">
         <label>
           窗口透明度
           <span class="opacity-value">{{ opacityPercent }}%</span>
@@ -125,6 +133,7 @@ export default {
     const apiKey = ref('');
     const baseUrl = ref('https://www.minimax.io');
     const alwaysOnTop = ref(true);
+    const clickThrough = ref(false);
     const opacity = ref(0.95);
     const backgroundColor = ref('#ffffff');
     const visibleQuotas = ref({ interval5h: true, weekly: true, video: true });
@@ -157,6 +166,7 @@ export default {
         apiKey.value = cfg.apiKey || '';
         baseUrl.value = cfg.baseUrl || 'https://www.minimax.io';
         alwaysOnTop.value = cfg.alwaysOnTop !== false;
+        clickThrough.value = cfg.clickThrough === true;
         if (typeof cfg.opacity === 'number') opacity.value = cfg.opacity;
         if (typeof cfg.backgroundColor === 'string' && cfg.backgroundColor) {
           backgroundColor.value = cfg.backgroundColor;
@@ -186,6 +196,7 @@ export default {
         apiKey: apiKey.value,
         baseUrl: baseUrl.value,
         alwaysOnTop: alwaysOnTop.value,
+        clickThrough: clickThrough.value,
         opacity: opacity.value,
         backgroundColor: backgroundColor.value,
         visibleQuotas: { ...visibleQuotas.value },
@@ -194,6 +205,7 @@ export default {
       emit('saved', {
         baseUrl: baseUrl.value,
         alwaysOnTop: alwaysOnTop.value,
+        clickThrough: clickThrough.value,
         opacity: opacity.value,
         backgroundColor: backgroundColor.value,
         visibleQuotas: { ...visibleQuotas.value },
@@ -203,6 +215,7 @@ export default {
 
     return {
       apiKey, baseUrl, alwaysOnTop,
+      clickThrough,
       opacity, opacityPercent, backgroundColor,
       visibleQuotas, refreshIntervalMinutes, presetColors,
       ready, save,

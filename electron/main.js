@@ -15,6 +15,7 @@ const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+let clickThroughEnabled = false;
 
 function readConfig() {
   try {
@@ -46,6 +47,36 @@ function applyWindowOpacity(v) {
   if (mainWindow) mainWindow.setOpacity(clampOpacity(v));
 }
 
+function applyClickThrough(flag) {
+  clickThroughEnabled = !!flag;
+  if (mainWindow) {
+    mainWindow.setIgnoreMouseEvents(clickThroughEnabled, { forward: true });
+  }
+  rebuildTrayMenu();
+}
+
+function rebuildTrayMenu() {
+  if (!tray) return;
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: '显示主面板', click: () => mainWindow && mainWindow.show() },
+      {
+        label: '鼠标穿透',
+        type: 'checkbox',
+        checked: clickThroughEnabled,
+        click: (item) => {
+          const next = !!item.checked;
+          applyClickThrough(next);
+          const cfg = readConfig();
+          cfg.clickThrough = next;
+          writeConfig(cfg);
+        },
+      },
+      { label: '退出', click: () => { isQuitting = true; app.quit(); } },
+    ])
+  );
+}
+
 function createWindow() {
   const cfg = readConfig();
 
@@ -71,6 +102,7 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   mainWindow.setSkipTaskbar(true);
   applyWindowOpacity(cfg.opacity ?? 0.95);
+  applyClickThrough(cfg.clickThrough === true);
 
   if (process.platform === 'darwin') {
     app.dock && app.dock.hide();
@@ -108,12 +140,7 @@ function createTray() {
     }
     tray = new Tray(icon);
     tray.setToolTip('MiniMax Token Usage');
-    tray.setContextMenu(
-      Menu.buildFromTemplate([
-        { label: '显示主面板', click: () => mainWindow.show() },
-        { label: '退出', click: () => { isQuitting = true; app.quit(); } },
-      ])
-    );
+    rebuildTrayMenu();
     tray.on('click', () => {
       if (mainWindow.isVisible()) mainWindow.hide();
       else mainWindow.show();
@@ -145,6 +172,7 @@ ipcMain.handle('config:get', () => {
     video: cfg.visibleQuotas?.video !== false,
   };
   cfg.refreshIntervalMinutes = clampRefreshMinutes(cfg.refreshIntervalMinutes);
+  cfg.clickThrough = cfg.clickThrough === true;
   delete cfg.apiKeyEncrypted;
   return cfg;
 });
@@ -188,6 +216,9 @@ ipcMain.handle('config:set', (_evt, payload) => {
   if (payload.refreshIntervalMinutes !== undefined) {
     cfg.refreshIntervalMinutes = clampRefreshMinutes(payload.refreshIntervalMinutes);
   }
+  if (payload.clickThrough !== undefined) {
+    cfg.clickThrough = !!payload.clickThrough;
+  }
   writeConfig(cfg);
   return { ok: true };
 });
@@ -201,6 +232,10 @@ ipcMain.handle('window:set-opacity', (_evt, value) => {
   const v = clampOpacity(value);
   applyWindowOpacity(v);
   return { ok: true, opacity: v };
+});
+ipcMain.handle('window:set-click-through', (_evt, flag) => {
+  applyClickThrough(flag);
+  return { ok: true, clickThrough: clickThroughEnabled };
 });
 ipcMain.handle('window:resize', (_evt, width, height) => {
   if (!mainWindow) return { ok: false };
