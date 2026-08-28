@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, Tray, Menu, nativeImage, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { generateIconBuffer } = require('../scripts/build-tray-icon.js');
@@ -59,6 +59,41 @@ function applyClickThrough(flag) {
   rebuildTrayMenu();
 }
 
+function rectsIntersect(a, b) {
+  return !(
+    a.x + a.width <= b.x ||
+    b.x + b.width <= a.x ||
+    a.y + a.height <= b.y ||
+    b.y + b.height <= a.y
+  );
+}
+
+function isBoundsVisible(bounds) {
+  if (!bounds) return false;
+  const { x, y, width, height } = bounds;
+  if (![x, y, width, height].every(Number.isFinite)) return false;
+  if (width < 240 || height < 120) return false;
+  const displays = screen.getAllDisplays();
+  return displays.some((d) => rectsIntersect(bounds, d.workArea));
+}
+
+let saveBoundsTimer = null;
+function saveBoundsNow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const b = mainWindow.getBounds();
+    const cfg = readConfig();
+    cfg.bounds = b;
+    writeConfig(cfg);
+  } catch (e) {
+    // 忽略：保存失败不应阻塞窗口生命周期
+  }
+}
+function saveBoundsDebounced() {
+  if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+  saveBoundsTimer = setTimeout(saveBoundsNow, 200);
+}
+
 function rebuildTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(
@@ -84,9 +119,17 @@ function rebuildTrayMenu() {
 function createWindow() {
   const cfg = readConfig();
 
+  const restoredBounds = isBoundsVisible(cfg.bounds) ? cfg.bounds : null;
+
   mainWindow = new BrowserWindow({
-    width: 520,
-    height: 280,
+    ...(restoredBounds
+      ? {
+          x: restoredBounds.x,
+          y: restoredBounds.y,
+          width: restoredBounds.width,
+          height: restoredBounds.height,
+        }
+      : { width: 520, height: 280 }),
     minWidth: 480,
     minHeight: 220,
     alwaysOnTop: true,
@@ -120,11 +163,15 @@ function createWindow() {
   }
 
   mainWindow.on('close', (e) => {
+    saveBoundsNow();
     if (!isQuitting) {
       e.preventDefault();
       mainWindow.hide();
     }
   });
+
+  mainWindow.on('move', saveBoundsDebounced);
+  mainWindow.on('resize', saveBoundsDebounced);
 
   mainWindow.on('show', () => {
     mainWindow.setSkipTaskbar(true);
@@ -285,4 +332,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  saveBoundsNow();
 });
