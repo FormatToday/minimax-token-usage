@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const SIZE = 32;
+const TRAY_SIZE = 32;
+const APP_ICON_SIZE = 256;
 const COLOR_OUTER = [79, 70, 229, 255];
 const COLOR_INNER = [165, 180, 252, 255];
 const COLOR_DOT = [255, 255, 255, 255];
@@ -25,24 +26,28 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crc]);
 }
 
-function pixelAt(x, y) {
-  const cx = 15.5, cy = 15.5;
+function pixelAt(size, x, y) {
+  const cx = (size - 1) / 2;
+  const cy = (size - 1) / 2;
   const dx = x - cx, dy = y - cy;
   const r = Math.sqrt(dx * dx + dy * dy);
-  if (r > 14.2) return [0, 0, 0, 0];
-  if (r > 12.5) return COLOR_OUTER;
-  if (r > 5) return COLOR_INNER;
-  if (r > 2.5) return COLOR_DOT;
+  const outerRing = size * 0.444;
+  const innerRing = size * 0.391;
+  const dotRing = size * 0.172;
+  if (r > outerRing) return [0, 0, 0, 0];
+  if (r > innerRing) return COLOR_OUTER;
+  if (r > dotRing) return COLOR_INNER;
+  if (r > size * 0.078) return COLOR_DOT;
   return COLOR_INNER;
 }
 
-function generateIconBuffer() {
-  const pixels = Buffer.alloc(SIZE * (1 + SIZE * 4));
-  for (let y = 0; y < SIZE; y++) {
-    const offset = y * (1 + SIZE * 4);
+function generateIconBuffer(size) {
+  const pixels = Buffer.alloc(size * (1 + size * 4));
+  for (let y = 0; y < size; y++) {
+    const offset = y * (1 + size * 4);
     pixels[offset] = 0;
-    for (let x = 0; x < SIZE; x++) {
-      const [r, g, b, a] = pixelAt(x, y);
+    for (let x = 0; x < size; x++) {
+      const [r, g, b, a] = pixelAt(size, x, y);
       const px = offset + 1 + x * 4;
       pixels[px] = r;
       pixels[px + 1] = g;
@@ -52,8 +57,8 @@ function generateIconBuffer() {
   }
 
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(SIZE, 0);
-  ihdr.writeUInt32BE(SIZE, 4);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
   ihdr[8] = 8;
   ihdr[9] = 6;
   ihdr[10] = 0;
@@ -69,11 +74,26 @@ function generateIconBuffer() {
   ]);
 }
 
-module.exports = { generateIconBuffer };
+const trayIconBuffer = () => generateIconBuffer(TRAY_SIZE);
+const appIconBuffer = () => generateIconBuffer(APP_ICON_SIZE);
+
+module.exports = {
+  generateIconBuffer,
+  trayIconBuffer,
+  appIconBuffer,
+  TRAY_SIZE,
+  APP_ICON_SIZE,
+};
 
 if (require.main === module) {
-  const outPath = path.join(__dirname, '..', 'build', 'tray-icon.png');
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, generateIconBuffer());
-  console.log(`[build-tray-icon] wrote ${outPath}`);
+  const outDir = path.join(__dirname, '..', 'build');
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const trayPath = path.join(outDir, 'tray-icon.png');
+  fs.writeFileSync(trayPath, trayIconBuffer());
+  console.log(`[build-tray-icon] wrote ${trayPath} (${TRAY_SIZE}x${TRAY_SIZE})`);
+
+  const appIconPath = path.join(outDir, 'icon.png');
+  fs.writeFileSync(appIconPath, appIconBuffer());
+  console.log(`[build-tray-icon] wrote ${appIconPath} (${APP_ICON_SIZE}x${APP_ICON_SIZE})`);
 }

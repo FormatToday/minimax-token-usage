@@ -29,6 +29,8 @@ jobs:
         include:
           - target: win
             os: windows-latest
+          - target: linux
+            os: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -90,3 +92,22 @@ jobs:
           name: win-portable-${{ matrix.target }}
           if-no-files-found: ignore
           path: dist/win-unpacked
+
+      # ────────── Linux 产物 ──────────
+      - name: Upload linux AppImage
+        if: matrix.target == 'linux' && always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: linux-appimage-${{ matrix.target }}
+          if-no-files-found: ignore
+          path: |
+            dist/*.AppImage
+            dist/latest-linux.yml
+
+      - name: Upload linux tarball
+        if: matrix.target == 'linux' && always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: linux-tarball-${{ matrix.target }}
+          if-no-files-found: ignore
+          path: dist/*.tar.gz

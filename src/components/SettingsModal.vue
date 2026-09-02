@@ -150,7 +150,11 @@ export default {
       },
     });
 
+    // 监听 opacity 变化实时同步给主进程，但跳过 loadInitial 首次写入
+    // （首次写入会覆盖 App.vue 设置面板打开时设的 opacity=1，让面板变透）
+    let opacityWatchReady = false;
     watch(opacity, (val) => {
+      if (!opacityWatchReady) return;
       if (window.electronAPI?.setOpacity) {
         window.electronAPI.setOpacity(val);
       }
@@ -185,6 +189,7 @@ export default {
         console.warn('[SettingsModal] loadInitial failed:', e);
       } finally {
         ready.value = true;
+        opacityWatchReady = true;
       }
     }
     loadInitial();

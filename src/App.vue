@@ -325,8 +325,12 @@ export default {
     watch(visibleQuotaCount, resizeForContent);
 
     async function onSaved() {
-      // settingsOpen 设为 false 会触发 watcher，由它统一 loadConfig 恢复透明度/穿透
+      // 先关 modal；modal 关闭的 watcher 会触发 loadConfig 异步恢复透明度/穿透/可见性等。
+      // 但 refresh() 是同步触发的，而 watcher 里的 loadConfig 是异步的，
+      // 直接 refresh() 会读到旧的 apiKey（空）就提前 return，导致保存后界面不刷新。
+      // 这里显式 await loadConfig()，确保新 key/baseUrl/interval 等都到位再拉数据。
       settingsOpen.value = false;
+      await loadConfig();
       refresh();
     }
 

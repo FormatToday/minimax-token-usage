@@ -1,5 +1,6 @@
 :root {
   --bg-color: #ffffff;
+  --bg-opacity: 1;
   --bg-color-elevated: color-mix(in srgb, var(--bg-color), #000 4%);
   --border-color: color-mix(in srgb, var(--bg-color), #000 10%);
 }
@@ -16,7 +17,9 @@ html, body, #app {
     'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   font-size: 13px;
   color: #1f2328;
-  background: var(--bg-color);
+  /* Wayland 合成器（niri 等）上 mainWindow.setOpacity 没用；把背景 alpha 走 color-mix 直接合到 bg-color 里，
+     设 0.5 = 背景真 50% 透明，能直接看到后面的桌面/窗口。--bg-opacity 由 main.js 同步。 */
+  background: color-mix(in srgb, var(--bg-color), transparent calc((1 - var(--bg-opacity, 1)) * 100%));
   user-select: none;
   -webkit-user-select: none;
 }

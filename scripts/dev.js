@@ -74,7 +74,13 @@ async function main() {
   console.log(`[dev] ${url} is up, starting electron`);
 
   const electronBin = path.join(__dirname, '..', 'node_modules', '.bin', 'electron');
-  spawnLogged('electron', electronBin, ['.'], {});
+  const extraEnv = {};
+  // Linux/Wayland: 强制走 Ozone/Wayland 后端，避免某些纯 Wayland 合成器（Niri / Hyprland 等）
+  // 把 Electron 错误地降级到 XWayland。X11 会话下不设置此变量（保持自动检测）。
+  if (process.platform === 'linux' && process.env.XDG_SESSION_TYPE === 'wayland') {
+    extraEnv.ELECTRON_OZONE_PLATFORM_HINT = 'wayland';
+  }
+  spawnLogged('electron', electronBin, ['.'], extraEnv);
 }
 
 main().catch((err) => {

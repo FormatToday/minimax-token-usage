@@ -1,16 +1,20 @@
 const { app, BrowserWindow, ipcMain, safeStorage, Tray, Menu, nativeImage, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { generateIconBuffer } = require('../scripts/build-tray-icon.js');
+const { trayIconBuffer } = require('../scripts/build-tray-icon.js');
 
 const isDev = !app.isPackaged;
 
 if (!isDev) {
-  // 默认走 Electron 默认的 %APPDATA%\<app-name>\，NSIS 升级不会动这里，配置跨升级保留。
-  // 便携模式：在 .exe 同目录放一个 portable.flag 文件即可启用，配置跟 .exe 一起（注意升级时会被替换，请自行备份）。
-  const exeDir = path.dirname(app.getPath('exe'));
-  if (fs.existsSync(path.join(exeDir, 'portable.flag'))) {
-    app.setPath('userData', path.join(exeDir, 'userData'));
+  // Windows: 默认走 Electron 默认的 %APPDATA%\<app-name>\，NSIS 升级不会动这里，配置跨升级保留。
+  //          便携模式：在 .exe 同目录放一个 portable.flag 文件即可启用，配置跟 .exe 一起（升级会被替换）。
+  // Linux:   默认走 ~/.config/<app-name>/；AppImage 走 FUSE 挂载，便携模式不适用。
+  // macOS:   默认走 ~/Library/Application Support/<app-name>/。
+  if (process.platform !== 'linux') {
+    const exeDir = path.dirname(app.getPath('exe'));
+    if (fs.existsSync(path.join(exeDir, 'portable.flag'))) {
+      app.setPath('userData', path.join(exeDir, 'userData'));
+    }
   }
 }
 
@@ -48,7 +52,17 @@ function clampRefreshMinutes(v) {
 }
 
 function applyWindowOpacity(v) {
-  if (mainWindow) mainWindow.setOpacity(clampOpacity(v));
+  if (!mainWindow) return;
+  const opacity = clampOpacity(v);
+  mainWindow.setOpacity(opacity);
+  // Wayland 协议没有 _NET_WM_WINDOW_OPACITY，setOpacity 在 Wayland 合成器（niri/hyprland 等）上无效。
+  // 窗口已 transparent: true，要让面板真半透明：
+  //   把 body/html 的 background 走 color-mix 把 alpha 算到背景色里（CSS 变量 --bg-opacity）
+  //   这样设 0.5 → 背景就是 50% 透明 → 真能看到后面，而不是颜色被冲淡。
+  //   （不在 body 上叠 opacity，否则会和背景 alpha 双重相乘，越调越乱）
+  mainWindow.webContents.executeJavaScript(
+    `document.documentElement.style.setProperty('--bg-opacity', ${opacity});`
+  ).catch(() => {});
 }
 
 function applyClickThrough(flag) {
@@ -120,12 +134,14 @@ function createWindow() {
   const cfg = readConfig();
 
   const restoredBounds = isBoundsVisible(cfg.bounds) ? cfg.bounds : null;
+  // Wayland 协议（xdg-shell）不允许 app 自己定位窗口，BrowserWindow 的 x/y 会被合成器忽略。
+  // Niri 会自动记住浮动窗口的位置（依赖 app-id 一致），所以 Wayland 下不传 x/y 让合成器用上次位置。
+  const isWayland = !!process.env.WAYLAND_DISPLAY;
 
   mainWindow = new BrowserWindow({
     ...(restoredBounds
       ? {
-          x: restoredBounds.x,
-          y: restoredBounds.y,
+          ...(isWayland ? {} : { x: restoredBounds.x, y: restoredBounds.y }),
           width: restoredBounds.width,
           height: restoredBounds.height,
         }
@@ -148,6 +164,7 @@ function createWindow() {
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   mainWindow.setSkipTaskbar(true);
+  // 先调一次（让 mainWindow.setOpacity 立即生效），等页面加载完再补 CSS opacity（Wayland 合成器上唯一的可视手段）
   applyWindowOpacity(cfg.opacity ?? 0.95);
   applyClickThrough(cfg.clickThrough === true);
 
@@ -161,6 +178,10 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+
+  mainWindow.webContents.once('did-finish-load', () => {
+    applyWindowOpacity(cfg.opacity ?? 0.95);
+  });
 
   mainWindow.on('close', (e) => {
     saveBoundsNow();
@@ -178,7 +199,7 @@ function createWindow() {
   });
 }
 
-const TRAY_ICON_PNG = generateIconBuffer();
+const TRAY_ICON_PNG = trayIconBuffer();
 
 function createTray() {
   try {
@@ -212,6 +233,9 @@ ipcMain.handle('config:get', () => {
   } else if (cfg.apiKeyEncrypted) {
     cfg.apiKey = '';
   }
+  if (!cfg.apiKey && cfg.apiKeyPlain) {
+    cfg.apiKey = cfg.apiKeyPlain;
+  }
   cfg.hasApiKey = !!cfg.apiKey;
   cfg.opacity = clampOpacity(cfg.opacity ?? 0.95);
   cfg.backgroundColor = typeof cfg.backgroundColor === 'string' && cfg.backgroundColor.trim()
@@ -234,8 +258,10 @@ ipcMain.handle('config:set', (_evt, payload) => {
     if (payload.apiKey && safeStorage.isEncryptionAvailable()) {
       const encrypted = safeStorage.encryptString(payload.apiKey);
       cfg.apiKeyEncrypted = encrypted.toString('base64');
+      delete cfg.apiKeyPlain;
     } else if (payload.apiKey) {
       cfg.apiKeyPlain = payload.apiKey;
+      delete cfg.apiKeyEncrypted;
     } else {
       delete cfg.apiKeyEncrypted;
       delete cfg.apiKeyPlain;

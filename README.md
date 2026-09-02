@@ -16,7 +16,7 @@
   - **视频赠送**（视频生成配额）
 - ⏰ 每分钟自动刷新一次
 - 📌 窗口始终置顶，可在屏幕上任意拖动
-- 🔐 API Key 通过 Electron `safeStorage` 在本机加密存储（Windows DPAPI）
+- 🔐 API Key 通过 Electron `safeStorage` 在本机加密存储（Windows DPAPI / Linux libsecret / macOS Keychain）
 - 🪟 关闭窗口后最小化到托盘，不退出进程
 - 🌍 支持全球版（api.minimax.io）和中国版（api.minimaxi.com）
 
@@ -70,6 +70,12 @@ npm run package:win
 # Windows 干净构建（先清掉 electron-builder 缓存，再打包）
 npm run package:win:clean
 
+# Linux AppImage + tar.gz
+npm run package:linux
+
+# Linux 干净构建（先清掉 electron-builder 缓存，再打包）
+npm run package:linux:clean
+
 # 仅清缓存
 npm run clean:builder-cache
 ```
@@ -87,24 +93,27 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Windows 单平台构建。会同时产出两种变体（安装版 + 便携版），都上传到同名 Release：
+Windows + Linux 双平台构建。会同时产出两种变体（安装版 + 便携版），都上传到同名 Release：
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
 | Windows | `MiniMax Token Usage Setup 1.0.0.exe`（NSIS 安装器） | `win-unpacked/`（绿色版，解压即用） |
+| Linux | `MiniMax Token Usage-1.0.0.AppImage`（AppImage） | `MiniMax Token Usage-1.0.0.tar.gz`（解压即用） |
 
-**② Actions 页面手动触发 → 2 个独立 Artifacts**
+**② Actions 页面手动触发 → 4 个独立 Artifacts**
 
 在 GitHub 仓库页 → Actions → Release → Run workflow。弹窗里有两个选项：
 
 - **publish**（默认 false）：勾上后也会把产物推到 GitHub Releases；不勾则只上传到当前 run 的 Artifacts 区域
 
-无论 publish 怎么选，每次手动触发都会在 Artifacts 区域产出 2 个带 `.zip` 后缀的独立文件：
+无论 publish 怎么选，每次手动触发都会在 Artifacts 区域产出 4 个带 `.zip` 后缀的独立文件：
 
 | Artifact | 平台 / 变体 | 内容 |
 | --- | --- | --- |
 | `win-installer.zip` | Windows 安装版 | `*Setup*.exe` + `*.exe.blockmap` + `latest.yml` |
 | `win-portable.zip` | Windows 便携版 | `win-unpacked/` 完整目录，解压即用 |
+| `linux-appimage.zip` | Linux AppImage | `*.AppImage` + `latest-linux.yml` |
+| `linux-tarball.zip` | Linux tar.gz | `*.tar.gz` |
 
 > ℹ️ 手动触发默认只在 Actions Artifacts，不出现在仓库右侧 Releases，是为了避免误操作污染正式发布列表。需要发布时勾上 publish 即可。
 
@@ -122,6 +131,45 @@ Windows 单平台构建。会同时产出两种变体（安装版 + 便携版）
 > - **用管理员身份运行 PowerShell/cmd** 后再执行 `npm run package:win`
 >
 > 如果之前已留下损坏的缓存目录，先跑 `npm run clean:builder-cache` 或 `npm run package:win:clean` 清掉再重试。
+
+## Linux 安装与运行（Arch / Niri 适用）
+
+**下载**
+
+从 [Releases](https://github.com/FormatToday/minimax-token-usage/releases/latest) 拉 `*.AppImage`。
+
+**跑 AppImage（首次要给执行权限）**
+
+```bash
+chmod +x MiniMax\ Token\ Usage-*.AppImage
+./MiniMax\ Token\ Usage-*.AppImage
+```
+
+> AppImage 在 Niri / Hyprland / Sway 等纯 Wayland 合成器上默认能跑；`scripts/dev.js` 已自动注入 `ELECTRON_OZONE_PLATFORM_HINT=wayland`，所以 `npm run dev` 也是同理。
+
+**Niri 上要看托盘**
+
+Niri 不内置托盘栏，需要一个外部 tray daemon 来消费 StatusNotifierItem 协议：
+
+```bash
+yay -S snixembed-git
+```
+
+然后在 `~/.config/niri/init.kdl` 或 systemd 里启动：
+
+```
+spawn-at-startup "snixembed"
+```
+
+没有 daemon 跑着的话，托盘不会显示（应用本体不受影响）。
+
+**API Key 加密需要 libsecret**
+
+```bash
+sudo pacman -S libsecret
+```
+
+未安装时 `safeStorage.isEncryptionAvailable()` 返回 `false`，代码会自动降级到明文存储（`apiKeyPlain` 字段），仍然能跑，就是不加密。安装后第一次写入会自动迁移到加密。
 
 ## 使用方法
 

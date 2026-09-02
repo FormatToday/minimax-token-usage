@@ -11,15 +11,17 @@
     "url": "https://github.com/FormatToday/minimax-token-usage/issues"
   },
   "homepage": "https://github.com/FormatToday/minimax-token-usage",
-  "scripts": {
+"scripts": {
     "dev": "node scripts/dev.js",
     "dev:vite": "vite",
     "dev:electron": "node scripts/wait-and-launch.js",
     "build": "vite build",
     "start": "electron .",
     "package": "vite build && electron-builder",
-"package:win": "vite build && electron-builder --win --x64 && node scripts/clean-artifacts.js",
+    "package:win": "vite build && electron-builder --win --x64 && node scripts/clean-artifacts.js",
     "package:win:clean": "node scripts/clean-builder-cache.js && vite build && electron-builder --win --x64 && node scripts/clean-artifacts.js",
+    "package:linux": "vite build && electron-builder --linux --x64 && node scripts/clean-artifacts.js",
+    "package:linux:clean": "node scripts/clean-builder-cache.js && vite build && electron-builder --linux --x64 && node scripts/clean-artifacts.js",
     "clean:builder-cache": "node scripts/clean-builder-cache.js",
     "postinstall": "node scripts/fix-electron-path.js && node scripts/build-tray-icon.js"
   },
@@ -40,6 +42,16 @@
         "en-US",
         "zh-CN"
       ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "synopsis": "MiniMax Token Plan usage widget",
+      "description": "桌面置顶小工具：实时显示 MiniMax Token Plan (Coding Plan) 使用量"
     },
     "nsis": {
       "oneClick": true,
